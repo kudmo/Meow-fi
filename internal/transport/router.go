@@ -3,6 +3,7 @@ package transport
 import (
 	"Meow-fi/internal/auth"
 	"Meow-fi/internal/config"
+	"Meow-fi/internal/handlers"
 
 	"Meow-fi/internal/database"
 	controllers "Meow-fi/internal/services"
@@ -11,6 +12,7 @@ import (
 	"net/http"
 
 	"github.com/golang-jwt/jwt/v4"
+	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
@@ -22,48 +24,9 @@ func Init() {
 
 	noticeController := controllers.NewNoticeController(database.NewSqlHandler())
 	userController := controllers.NewUserController(database.NewSqlHandler())
-	e.GET("/notices", func(ctx echo.Context) error {
-		tasks := noticeController.GetAllNotices()
-		ctx.Bind(&tasks)
-		return ctx.JSON(http.StatusOK, tasks)
-	})
-	e.GET("/notices/:id", func(ctx echo.Context) error {
-		id := ctx.Param("id")
-		str := noticeController.GetNoticeInfo(id)
-		ctx.Bind(&str)
-		return ctx.JSON(http.StatusOK, str)
-	})
-	e.POST("/notices", func(ctx echo.Context) error {
-		noticeController.Create(ctx)
-		return ctx.String(http.StatusOK, "created")
-	})
 
-	e.GET("/users", func(ctx echo.Context) error {
-		users := userController.GetAllUsers()
-		ctx.Bind(&users)
-		return ctx.JSON(http.StatusOK, users)
-	})
+	noticeHandler := &handlers.NoticeHandler{Controller: *noticeController}
 
-	e.POST("/registrate", func(c echo.Context) error {
-		username := c.FormValue("username")
-		password := c.FormValue("password")
-		err := userController.Create(username, password)
-		if err != nil {
-			return c.String(http.StatusBadRequest, err.Error())
-		}
-		return c.String(http.StatusOK, "created")
-	})
-
-	type jwtCustomClaims struct {
-		Name string `json:"name"`
-		jwt.RegisteredClaims
-	}
-	// configjwt := echojwt.Config{
-	// 	NewClaimsFunc: func(c echo.Context) jwt.Claims {
-	// 		return new(jwtCustomClaims)
-	// 	},
-	// 	SigningKey: []byte("secret"),
-	// }
 	e.POST("login", func(c echo.Context) error {
 		username := c.FormValue("username")
 		password := c.FormValue("password")
@@ -77,8 +40,8 @@ func Init() {
 			return echo.ErrUnauthorized
 		}
 		// Set custom claims
-		claims := &jwtCustomClaims{
-			username,
+		claims := &auth.JwtCustomClaims{
+			user.UserId,
 			jwt.RegisteredClaims{
 				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 72)),
 			},
@@ -96,6 +59,76 @@ func Init() {
 		return c.JSON(http.StatusOK, echo.Map{
 			"token": t,
 		})
+	})
+
+	e.GET("/notices", func(ctx echo.Context) error {
+		tasks := noticeController.GetAllNotices()
+		return ctx.JSON(http.StatusOK, tasks)
+	})
+	e.GET("/notices/:id",
+		func(ctx echo.Context) error {
+			return ctx.NoContent(http.StatusOK)
+		},
+		echojwt.WithConfig(echojwt.Config{
+			NewClaimsFunc: func(c echo.Context) jwt.Claims {
+				return new(auth.JwtCustomClaims)
+			},
+			SigningKey: []byte(config.SecretKeyJwt),
+			SuccessHandler: func(c echo.Context) {
+				noticeHandler.GetNoticeInfo(c)
+			},
+			ErrorHandler: func(c echo.Context, err error) error {
+				noticeHandler.GetNoticeInfoGuest(c)
+				return nil
+			},
+		}))
+
+	e.PUT("/notices/:id",
+		func(ctx echo.Context) error {
+			return ctx.NoContent(http.StatusOK)
+		},
+		echojwt.WithConfig(echojwt.Config{
+			NewClaimsFunc: func(c echo.Context) jwt.Claims {
+				return new(auth.JwtCustomClaims)
+			},
+			SigningKey: []byte(config.SecretKeyJwt),
+			SuccessHandler: func(c echo.Context) {
+				noticeHandler.UpdateNotice(c)
+			},
+		}))
+
+	e.DELETE("/notices/:id",
+		func(ctx echo.Context) error {
+			return ctx.NoContent(http.StatusOK)
+		},
+		echojwt.WithConfig(echojwt.Config{
+			NewClaimsFunc: func(c echo.Context) jwt.Claims {
+				return new(auth.JwtCustomClaims)
+			},
+			SigningKey: []byte(config.SecretKeyJwt),
+			SuccessHandler: func(c echo.Context) {
+				noticeHandler.DeleteNotice(c)
+			},
+		}))
+
+	e.POST("/notices", func(ctx echo.Context) error {
+		noticeController.Create(ctx)
+		return ctx.String(http.StatusOK, "created")
+	})
+
+	e.GET("/users", func(ctx echo.Context) error {
+		users := userController.GetAllUsers()
+		return ctx.JSON(http.StatusOK, users)
+	})
+
+	e.POST("/registrate", func(c echo.Context) error {
+		username := c.FormValue("username")
+		password := c.FormValue("password")
+		err := userController.Create(username, password)
+		if err != nil {
+			return c.String(http.StatusBadRequest, err.Error())
+		}
+		return c.String(http.StatusOK, "created")
 	})
 
 	e.Logger.Fatal(e.Start(config.ServerPort))

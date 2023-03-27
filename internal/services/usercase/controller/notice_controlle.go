@@ -22,10 +22,6 @@ func (interactor *NoticeInteractor) GetNotice(id string) models.Notice {
 	task, _ := interactor.NoticeRepository.SelectById(id)
 	return task
 }
-func (interactor *NoticeInteractor) GetNoticeInfo(id string) models.Notice {
-	task := interactor.NoticeRepository.GetNoticeInfo(id)
-	return task
-}
 func (interactor *NoticeInteractor) Delete(id string) {
 	interactor.NoticeRepository.Delete(id)
 }

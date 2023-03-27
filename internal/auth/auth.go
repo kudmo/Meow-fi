@@ -2,13 +2,20 @@ package auth
 
 import (
 	"Meow-fi/internal/config"
+	"crypto/sha256"
+	"encoding/hex"
 	"math/rand"
-	"time"
+
+	"github.com/golang-jwt/jwt/v4"
 )
+
+type JwtCustomClaims struct {
+	Id int `json:"id"`
+	jwt.RegisteredClaims
+}
 
 func RandSeq() string {
 	var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-	rand.Seed(time.Now().UnixNano())
 	b := make([]rune, config.LenRandomSalt)
 	for i := range b {
 		b[i] = letters[rand.Intn(len(letters))]
@@ -16,5 +23,6 @@ func RandSeq() string {
 	return string(b)
 }
 func HashPass(password, randomSalt, localSalt string) string {
-	return password + randomSalt + localSalt
+	sum := sha256.Sum256([]byte(password + randomSalt + localSalt))
+	return hex.EncodeToString(sum[:])
 }

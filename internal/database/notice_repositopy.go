@@ -20,11 +20,11 @@ func (db *NoticeRepository) Select() []models.Notice {
 	return notices
 }
 func (db *NoticeRepository) UpdateNotice(notice models.Notice) {
-	db.Update(notice)
+	db.Update(&notice)
 }
 func (db *NoticeRepository) SelectById(id string) (models.Notice, error) {
 	var notice models.Notice
-	res := db.Where("id = ?", id).Find(&notice)
+	res := db.Preload("Client").Where("id = ?", id).Find(&notice)
 	if res.Error != nil {
 		return notice, res.Error
 	}
@@ -32,11 +32,6 @@ func (db *NoticeRepository) SelectById(id string) (models.Notice, error) {
 		return notice, gorm.ErrRecordNotFound
 	}
 	return notice, nil
-}
-func (db *NoticeRepository) GetNoticeInfo(id string) models.Notice {
-	var task models.Notice
-	db.Preload("Client").Where("id = ?", id).Find(&task)
-	return task
 }
 func (db *NoticeRepository) Delete(id string) {
 	var notices []models.Notice

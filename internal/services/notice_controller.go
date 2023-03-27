@@ -32,17 +32,11 @@ func (controller *NoticeController) Create(ctx echo.Context) {
 	return
 }
 func (controller *NoticeController) UpdateNotice(t models.Notice) {
-
+	controller.Interactor.UpdateNotice(t)
 }
 func (controller *NoticeController) GetNotice(id string) models.Notice {
 	notice := controller.Interactor.GetNotice(id)
 	return notice
-}
-func (controller *NoticeController) GetNoticeInfo(id string) string {
-	notice := controller.Interactor.GetNoticeInfo(id)
-	str := ""
-	str += notice.Client.Login + " created notice: " + notice.Containing
-	return str
 }
 func (controller *NoticeController) Delete(id string) {
 	controller.Interactor.Delete(id)
