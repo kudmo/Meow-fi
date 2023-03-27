@@ -42,9 +42,9 @@ func (controller *DealController) GetDealInfo(PerformerId string, NoticeId strin
 	deal := controller.Interactor.GetDealInfo(PerformerId, NoticeId)
 	str := ""
 	if deal.Approved == true {
-		str += deal.Notice.Client.FIO + ": Deal: " + deal.Containing + "; Performer: " + deal.Performer.FIO
+		str += deal.Notice.Client.FIO + ": Deal: " + deal.Notice.Containing + "; Performer: " + deal.Performer.FIO
 	} else {
-		str += deal.Client.FIO + ": Deal: " + deal.Containing + "; Performer not found"
+		str += deal.Notice.Client.FIO + ": Deal: " + deal.Notice.Containing + "; Performer not found"
 	}
 	return str
 }
