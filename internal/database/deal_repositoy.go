@@ -32,5 +32,5 @@ func (db *DealRepository) GetDealInfo(PerformerId string, NoticeId string) model
 }
 func (db *DealRepository) Delete(PerformerId string, NoticeId string) {
 	var deals []models.Deal
-	db.DeleteById(&deals, PerformerId, NoticeId)
+	db.DeleteByMultiId(&deals, PerformerId, NoticeId)
 }
