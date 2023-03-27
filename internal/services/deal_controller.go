@@ -41,7 +41,11 @@ func (controller *DealController) GetDeal(PerformerId string, NoticeId string) m
 func (controller *DealController) GetDealInfo(PerformerId string, NoticeId string) string {
 	deal := controller.Interactor.GetDealInfo(PerformerId, NoticeId)
 	str := ""
-	str += deal.Client.FIO + " created Deal: " + deal.Containing
+	if deal.Approved == true {
+		str += deal.Notice.Client.FIO + ": Deal: " + deal.Containing + "; Performer: " + deal.Performer.FIO
+	} else {
+		str += deal.Client.FIO + ": Deal: " + deal.Containing + "; Performer not found"
+	}
 	return str
 }
 func (controller *DealController) Delete(PerformerId string, NoticeId string) {
