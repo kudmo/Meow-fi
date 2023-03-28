@@ -5,6 +5,8 @@ import (
 	"Meow-fi/internal/database/interfaces"
 	"Meow-fi/internal/models"
 	"Meow-fi/internal/services/usercase/controller"
+	"errors"
+	"net/http"
 
 	"github.com/labstack/echo"
 )
@@ -35,18 +37,19 @@ func (controller *DealController) UpdateDeal(t models.Deal) {
 
 }
 func (controller *DealController) GetDeal(PerformerId string, NoticeId string) models.Deal {
-	deal := controller.Interactor.GetDeal(PerformerId, NoticeId)
+	deal, _ := controller.Interactor.GetDeal(PerformerId, NoticeId)
 	return deal
 }
-func (controller *DealController) GetDealInfo(PerformerId string, NoticeId string) string {
-	deal := controller.Interactor.GetDealInfo(PerformerId, NoticeId)
-	str := ""
-	if deal.Approved == true {
-		str += deal.Notice.Client.FIO + ": Deal: " + deal.Notice.Containing + "; Performer: " + deal.Performer.FIO
-	} else {
-		str += deal.Notice.Client.FIO + ": Deal: " + deal.Notice.Containing + "; Performer not found"
+func (controller *DealController) GetDealInfo(c echo.Context) error {
+	PerformerId := c.Param("performer_id")
+	NoticeId := c.Param("notice_id")
+	deal, err := controller.Interactor.GetDealInfo(PerformerId, NoticeId)
+	if err != nil {
+		c.NoContent(http.StatusBadRequest)
+		return errors.New("Error")
 	}
-	return str
+	c.String(http.StatusOK, deal.Performer.FIO+" want to do "+deal.Notice.Containing)
+	return nil
 }
 func (controller *DealController) Delete(PerformerId string, NoticeId string) {
 	controller.Interactor.Delete(PerformerId, NoticeId)
