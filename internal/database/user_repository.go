@@ -11,8 +11,8 @@ type UserRepository struct {
 	interfaces.SqlHandler
 }
 
-func (db *UserRepository) Store(u models.User) {
-	db.Create(&u)
+func (db *UserRepository) Store(u models.User) error {
+	return db.Create(&u)
 }
 
 func (db *UserRepository) Select() []models.User {
@@ -33,13 +33,19 @@ func (db *UserRepository) SelectByLogin(login string) (models.User, error) {
 	return user, nil
 }
 
-func (db *UserRepository) SelectById(id string) models.User {
+func (db *UserRepository) SelectById(id string) (models.User, error) {
 	var user models.User
-	db.Where("id = ?", id).Find(&user)
-	return user
+	res := db.Where("id = ?", id).Find(&user)
+	if res.Error != nil {
+		return user, res.Error
+	}
+	if res.RowsAffected == 0 {
+		return user, gorm.ErrRecordNotFound
+	}
+	return user, nil
 }
 
-func (db *UserRepository) Delete(id string) {
+func (db *UserRepository) Delete(id string) error {
 	var user []models.User
-	db.DeleteById(&user, id)
+	return db.DeleteById(&user, id)
 }

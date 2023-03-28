@@ -9,8 +9,8 @@ type UserInteractor struct {
 	UserRepository repo.UserRepository
 }
 
-func (interactor *UserInteractor) Add(u models.User) {
-	interactor.UserRepository.Store(u)
+func (interactor *UserInteractor) Add(u models.User) error {
+	return interactor.UserRepository.Store(u)
 }
 
 func (interactor *UserInteractor) GetAllUsers() []models.User {
@@ -19,9 +19,9 @@ func (interactor *UserInteractor) GetAllUsers() []models.User {
 func (interactor *UserInteractor) GetUserByLogin(login string) (models.User, error) {
 	return interactor.UserRepository.SelectByLogin(login)
 }
-func (interactor *UserInteractor) GetUserById(id string) models.User {
+func (interactor *UserInteractor) GetUserById(id string) (models.User, error) {
 	return interactor.UserRepository.SelectById(id)
 }
-func (interactor *UserInteractor) Delete(id string) {
-	interactor.UserRepository.Delete(id)
+func (interactor *UserInteractor) Delete(id string) error {
+	return interactor.UserRepository.Delete(id)
 }

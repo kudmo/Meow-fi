@@ -122,9 +122,7 @@ func Init() {
 	})
 
 	e.POST("/registrate", func(c echo.Context) error {
-		username := c.FormValue("username")
-		password := c.FormValue("password")
-		err := userController.Create(username, password)
+		err := userController.Create(c)
 		if err != nil {
 			return c.String(http.StatusBadRequest, err.Error())
 		}

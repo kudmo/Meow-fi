@@ -9,7 +9,7 @@ import (
 	"Meow-fi/internal/services/usercase/controller"
 	"errors"
 
-	"gorm.io/gorm"
+	"github.com/labstack/echo/v4"
 )
 
 type UserController struct {
@@ -26,17 +26,17 @@ func NewUserController(sqlHandler interfaces.SqlHandler) *UserController {
 	}
 }
 
-func (controller *UserController) Create(login string, password string) error {
-	_, err := controller.GetUserByLogin(login)
-	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		return errors.New("login already exist")
-	}
-	user := models.User{Login: login}
+func (controller *UserController) Create(c echo.Context) error {
+	login := c.FormValue("login")
+	password := c.FormValue("password")
+
 	randomSalt := auth.RandSeq()
 	hashedPass := auth.HashPass(password, randomSalt, config.LocalSalt)
-	user.Salt = randomSalt
-	user.Password = hashedPass
-	controller.Interactor.Add(user)
+	user := models.User{Login: login, Password: hashedPass, Salt: randomSalt}
+
+	if controller.Interactor.Add(user) != nil {
+		return errors.New("login already exist")
+	}
 	return nil
 }
 func (controller *UserController) GetAllUsers() []models.User {
