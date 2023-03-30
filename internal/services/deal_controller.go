@@ -8,7 +8,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 )
 
 type DealController struct {
@@ -48,7 +48,7 @@ func (controller *DealController) GetDealInfo(c echo.Context) error {
 		c.NoContent(http.StatusBadRequest)
 		return errors.New("Error")
 	}
-	c.String(http.StatusOK, deal.Performer.FIO+" want to do "+deal.Notice.Containing)
+	c.String(http.StatusOK, deal.Performer.Login+" want to do "+deal.Notice.Containing)
 	return nil
 }
 func (controller *DealController) Delete(PerformerId string, NoticeId string) {
