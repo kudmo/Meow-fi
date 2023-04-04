@@ -1,51 +1,95 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
+	"strconv"
 
 	"Meow-fi/internal/auth"
+	"Meow-fi/internal/models"
 	controllers "Meow-fi/internal/services"
 
-	"github.com/golang-jwt/jwt/v4"
 	"github.com/labstack/echo/v4"
 )
 
+// Structure for handling requests related to notifications.
+// All requests for a particular notice by id use information from the JWT (user id)
 type NoticeHandler struct {
 	Controller controllers.NoticeController
 }
 
-func (handler *NoticeHandler) GetNoticeInfo(c echo.Context) {
-	id := c.Param("id")
-	notice := handler.Controller.GetNotice(id)
-	if notice.Client.UserId == c.Get("user").(*jwt.Token).Claims.(*auth.JwtCustomClaims).Id {
-		c.JSON(http.StatusOK, "You added notice: \""+notice.Containing+"\" at "+notice.CreatedAt.Format("02-Jan-2006"))
-	} else {
-		c.JSON(http.StatusOK, "Somebody added notice: \""+notice.Containing+"\"")
+func (handler *NoticeHandler) Create(c echo.Context) error {
+	notice := models.Notice{}
+	c.Bind(&notice)
+	userId := auth.TokenGetUserId(c)
+	err := handler.Controller.Create(userId, notice)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "something goes wrong")
 	}
+	return c.String(http.StatusOK, "created")
 }
-func (handler *NoticeHandler) GetNoticeInfoGuest(c echo.Context) {
-	c.JSON(http.StatusOK, "Not allowed for guests")
+func (handler *NoticeHandler) GetAllNotices(c echo.Context) error {
+	notices := handler.Controller.GetAllNotices()
+	return c.JSON(http.StatusOK, notices)
+}
+func (handler *NoticeHandler) GetNoticeInfo(c echo.Context) error {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return c.String(http.StatusBadRequest, "bad request")
+	}
+	userId := auth.TokenGetUserId(c)
+	noticeInfo, deals, err := handler.Controller.GetNoticeInfo(userId, id)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "something goes wrong")
+	}
+	return c.JSON(http.StatusOK, echo.Map{
+		"info":  noticeInfo,
+		"deals": deals,
+	})
+}
+func (handler *NoticeHandler) UpdateNotice(c echo.Context) error {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return c.String(http.StatusBadRequest, "bad request")
+	}
+	notice := models.Notice{}
+	c.Bind(&notice)
+	userId := auth.TokenGetUserId(c)
+	err = handler.Controller.UpdateNotice(userId, id, notice)
+	if err != nil {
+		if errors.Is(err, errors.New("not owner")) {
+			return c.String(http.StatusForbidden, "not owner")
+		}
+		return c.String(http.StatusInternalServerError, "something goes wrong")
+	}
+	return c.String(http.StatusOK, "updated")
+}
+func (handler *NoticeHandler) DeleteNotice(c echo.Context) error {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return c.String(http.StatusBadRequest, "bad request")
+	}
+	userId := auth.TokenGetUserId(c)
+	err = handler.Controller.Delete(userId, id)
+	if err != nil {
+		if errors.Is(err, errors.New("not owner")) {
+			return c.String(http.StatusForbidden, "not owner")
+		}
+		return c.String(http.StatusInternalServerError, "something goes wrong")
+	}
+	return c.String(http.StatusOK, "updated")
 }
 
-func (handler *NoticeHandler) UpdateNotice(c echo.Context) {
-	id := c.Param("id")
-	notice := handler.Controller.GetNotice(id)
-	if notice.Client.UserId == c.Get("user").(*jwt.Token).Claims.(*auth.JwtCustomClaims).Id {
-		c.Bind(&notice)
-		handler.Controller.UpdateNotice(notice)
-		c.String(http.StatusOK, "Updated")
-	} else {
-		c.String(http.StatusOK, "You arn't owner")
+// Add unapproved deal for notice by id
+func (handler *NoticeHandler) AddResponse(c echo.Context) error {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return c.String(http.StatusBadRequest, "bad request")
 	}
-}
-
-func (handler *NoticeHandler) DeleteNotice(c echo.Context) {
-	id := c.Param("id")
-	notice := handler.Controller.GetNotice(id)
-	if notice.Client.UserId == c.Get("user").(*jwt.Token).Claims.(*auth.JwtCustomClaims).Id {
-		handler.Controller.Delete(id)
-		c.String(http.StatusOK, "Deleted")
-	} else {
-		c.String(http.StatusOK, "You arn't owner")
+	userId := auth.TokenGetUserId(c)
+	err = handler.Controller.AddResponse(userId, id)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "something goes wrong")
 	}
+	return c.String(http.StatusOK, "added")
 }

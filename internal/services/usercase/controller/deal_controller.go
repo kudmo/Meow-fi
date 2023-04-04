@@ -12,18 +12,18 @@ type DealInteractor struct {
 func (interactor *DealInteractor) Add(t models.Deal) error {
 	return interactor.DealRepository.Store(t)
 }
-func (interactor *DealInteractor) UpdateDeal(t models.Deal) {
-	interactor.DealRepository.UpdateDeal(t)
+func (interactor *DealInteractor) UpdateDeal(t models.Deal) error {
+	return interactor.DealRepository.UpdateDeal(t)
 }
-func (interactor *DealInteractor) GetAllDeals() []models.Deal {
-	return interactor.DealRepository.Select()
+func (interactor *DealInteractor) GetAllPerformerDeals(PerformerId int) ([]models.Deal, error) {
+	return interactor.DealRepository.GetAllPerformerDeals(PerformerId)
 }
-func (interactor *DealInteractor) GetDeal(PerformerId string, NoticeId string) (models.Deal, error) {
+func (interactor *DealInteractor) GetAllNoticeDeals(NoticeId int) ([]models.Deal, error) {
+	return interactor.DealRepository.GetAllNoticeDeals(NoticeId)
+}
+func (interactor *DealInteractor) GetDeal(PerformerId, NoticeId int) (models.Deal, error) {
 	return interactor.DealRepository.SelectById(PerformerId, NoticeId)
 }
-func (interactor *DealInteractor) GetDealInfo(PerformerId string, NoticeId string) (models.Deal, error) {
-	return interactor.DealRepository.GetDealInfo(PerformerId, NoticeId)
-}
-func (interactor *DealInteractor) Delete(PerformerId string, NoticeId string) error {
+func (interactor *DealInteractor) Delete(PerformerId, NoticeId int) error {
 	return interactor.DealRepository.Delete(PerformerId, NoticeId)
 }

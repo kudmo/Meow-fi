@@ -5,43 +5,95 @@ import (
 	"Meow-fi/internal/database/interfaces"
 	"Meow-fi/internal/models"
 	"Meow-fi/internal/services/usercase/controller"
-
-	"github.com/labstack/echo/v4"
+	"errors"
 )
 
 type NoticeController struct {
-	Interactor controller.NoticeInteractor
+	noticeInteractor controller.NoticeInteractor
+	dealInteractor   controller.DealInteractor
 }
 
 func NewNoticeController(sqlHandler interfaces.SqlHandler) *NoticeController {
 	return &NoticeController{
-		Interactor: controller.NoticeInteractor{
+		noticeInteractor: controller.NoticeInteractor{
 			NoticeRepository: &database.NoticeRepository{
+				SqlHandler: sqlHandler,
+			},
+		},
+		dealInteractor: controller.DealInteractor{
+			DealRepository: &database.DealRepository{
 				SqlHandler: sqlHandler,
 			},
 		},
 	}
 }
 
-func (controller *NoticeController) Create(ctx echo.Context) {
-	notice := models.Notice{}
-	ctx.Bind(&notice)
-	controller.Interactor.Add(notice)
-	createdNotices := controller.Interactor.GetAllNotices()
-	ctx.JSON(201, createdNotices)
-	return
+func (controller *NoticeController) Create(idUser int, notice models.Notice) error {
+	notice.ClientId = idUser
+	err := controller.noticeInteractor.Add(notice)
+	return err
 }
-func (controller *NoticeController) UpdateNotice(t models.Notice) {
-	controller.Interactor.UpdateNotice(t)
+func (controller *NoticeController) UpdateNotice(idUser int, noticeId int, notice models.Notice) error {
+	notice_, err := controller.noticeInteractor.GetNotice(noticeId)
+	if err != nil {
+		return err
+	}
+	if notice_.ClientId != idUser {
+		return errors.New("not owner")
+	}
+	notice.ClientId = idUser
+	notice.Id = notice_.Id
+	notice.TypeNotice = notice_.TypeNotice
+	err = controller.noticeInteractor.UpdateNotice(notice)
+	return err
 }
-func (controller *NoticeController) GetNotice(id string) models.Notice {
-	notice := controller.Interactor.GetNotice(id)
-	return notice
+func (controller *NoticeController) GetNotice(noticeId int) (models.Notice, error) {
+	notice, err := controller.noticeInteractor.GetNotice(noticeId)
+	return notice, err
 }
-func (controller *NoticeController) Delete(id string) {
-	controller.Interactor.Delete(id)
+
+// Returns information about the Notice .
+// If user is creator also returns an array of deal for the given notice.
+func (controller *NoticeController) GetNoticeInfo(idUser int, noticeId int) (string, []models.Deal, error) {
+	notice, err := controller.noticeInteractor.GetNotice(noticeId)
+	if err != nil {
+		return "", nil, err
+	}
+	var info string
+	var deals []models.Deal
+	if notice.ClientId != idUser {
+		info, err = controller.noticeInteractor.GetNoticeInfoShort(noticeId)
+	} else {
+		info, err = controller.noticeInteractor.GetNoticeInfoFull(noticeId)
+		if err == nil {
+			deals, err = controller.dealInteractor.GetAllNoticeDeals(noticeId)
+		}
+	}
+	return info, deals, err
 }
 func (controller *NoticeController) GetAllNotices() []models.Notice {
-	res := controller.Interactor.GetAllNotices()
+	res := controller.noticeInteractor.GetAllNotices()
 	return res
+}
+func (controller *NoticeController) Delete(idUser int, noticeId int) error {
+
+	notice, err := controller.noticeInteractor.GetNotice(noticeId)
+	if err != nil {
+		return err
+	}
+
+	if notice.ClientId != idUser {
+		return errors.New("not owner")
+	}
+
+	err = controller.noticeInteractor.Delete(noticeId)
+	return err
+}
+
+func (controller *NoticeController) AddResponse(idUser int, noticeId int) error {
+	deal := models.Deal{}
+	deal.PerformerId = idUser
+	deal.NoticeId = noticeId
+	deal.Approved = false
+	return controller.dealInteractor.Add(deal)
 }

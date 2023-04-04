@@ -38,7 +38,6 @@ func (handler *SqlHandler) FindAll(obj interface{}) error {
 func (handler *SqlHandler) DeleteById(obj interface{}, id string) error {
 	err := handler.db.Delete(obj, id).Error
 	return err
-
 }
 func (handler *SqlHandler) SelectById(obj interface{}, id string) error {
 	err := handler.db.Select(obj, id).Error

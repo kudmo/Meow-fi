@@ -24,28 +24,22 @@ func (db *UserRepository) Select() []models.User {
 func (db *UserRepository) SelectByLogin(login string) (models.User, error) {
 	var user models.User
 	res := db.Where("login = ?", login).Find(&user)
-	if res.Error != nil {
-		return user, res.Error
-	}
 	if res.RowsAffected == 0 {
 		return user, gorm.ErrRecordNotFound
 	}
-	return user, nil
+	return user, res.Error
 }
 
-func (db *UserRepository) SelectById(id string) (models.User, error) {
+func (db *UserRepository) SelectById(id int) (models.User, error) {
 	var user models.User
 	res := db.Where("id = ?", id).Find(&user)
-	if res.Error != nil {
-		return user, res.Error
-	}
 	if res.RowsAffected == 0 {
 		return user, gorm.ErrRecordNotFound
 	}
-	return user, nil
+	return user, res.Error
 }
 
-func (db *UserRepository) Delete(id string) error {
+func (db *UserRepository) Delete(id int) error {
 	var user []models.User
-	return db.DeleteById(&user, id)
+	return db.Where("id = ?", id).Delete(&user).Error
 }

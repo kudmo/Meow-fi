@@ -7,11 +7,16 @@ import (
 	"math/rand"
 
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/labstack/echo/v4"
 )
 
 type JwtCustomClaims struct {
 	Id int `json:"id"`
 	jwt.RegisteredClaims
+}
+
+func TokenGetUserId(c echo.Context) int {
+	return c.Get("user").(*jwt.Token).Claims.(*JwtCustomClaims).Id
 }
 
 func RandSeq() string {

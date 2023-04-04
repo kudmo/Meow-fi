@@ -6,6 +6,6 @@ type NoticeRepository interface {
 	Store(models.Notice) error
 	UpdateNotice(models.Notice) error
 	Select() []models.Notice
-	SelectById(id string) (models.Notice, error)
-	Delete(id string) error
+	SelectById(id int) (models.Notice, error)
+	Delete(id int) error
 }

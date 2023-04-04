@@ -6,7 +6,8 @@ type DealRepository interface {
 	Store(models.Deal) error
 	UpdateDeal(models.Deal) error
 	Select() []models.Deal
-	SelectById(PerformerId string, NoticeId string) (models.Deal, error)
-	GetDealInfo(Performerid string, NoticeId string) (models.Deal, error)
-	Delete(Performerid string, NoticeId string) error
+	SelectById(PerformerId, NoticeId int) (models.Deal, error)
+	GetAllPerformerDeals(PerformerId int) ([]models.Deal, error)
+	GetAllNoticeDeals(NoticeId int) ([]models.Deal, error)
+	Delete(Performerid, NoticeId int) error
 }
