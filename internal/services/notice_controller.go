@@ -28,6 +28,9 @@ func NewNoticeController(sqlHandler interfaces.SqlHandler) *NoticeController {
 	}
 }
 
+func (controller *NoticeController) CheckClient(userId, noticeId int) (bool, error) {
+	return controller.noticeInteractor.CheckClient(userId, noticeId)
+}
 func (controller *NoticeController) Create(idUser int, notice models.Notice) error {
 	notice.ClientId = idUser
 	err := controller.noticeInteractor.Add(notice)
@@ -75,14 +78,14 @@ func (controller *NoticeController) GetAllNotices() []models.Notice {
 	res := controller.noticeInteractor.GetAllNotices()
 	return res
 }
-func (controller *NoticeController) Delete(idUser int, noticeId int) error {
+func (controller *NoticeController) DeleteNotice(userId int, noticeId int) error {
 
 	notice, err := controller.noticeInteractor.GetNotice(noticeId)
 	if err != nil {
 		return err
 	}
 
-	if notice.ClientId != idUser {
+	if notice.ClientId != userId {
 		return errors.New("not owner")
 	}
 
@@ -90,10 +93,17 @@ func (controller *NoticeController) Delete(idUser int, noticeId int) error {
 	return err
 }
 
-func (controller *NoticeController) AddResponse(idUser int, noticeId int) error {
+func (controller *NoticeController) AddResponse(userId int, noticeId int) error {
 	deal := models.Deal{}
-	deal.PerformerId = idUser
+	deal.PerformerId = userId
 	deal.NoticeId = noticeId
 	deal.Approved = false
 	return controller.dealInteractor.Add(deal)
+}
+func (controller *NoticeController) ApproveDeal(performerId, noticeId int) error {
+	return controller.dealInteractor.ApproveDeal(performerId, noticeId)
+}
+func (controller *NoticeController) DeleteDeal(performerId int, noticeId int) error {
+	err := controller.dealInteractor.Delete(performerId, noticeId)
+	return err
 }

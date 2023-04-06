@@ -12,6 +12,11 @@ type NoticeInteractor struct {
 func (interactor *NoticeInteractor) Add(t models.Notice) error {
 	return interactor.NoticeRepository.Store(t)
 }
+
+func (interactor *NoticeInteractor) CheckClient(userId, noticeId int) (bool, error) {
+	return interactor.NoticeRepository.CheckClient(userId, noticeId)
+}
+
 func (interactor *NoticeInteractor) UpdateNotice(t models.Notice) error {
 	return interactor.NoticeRepository.UpdateNotice(t)
 }

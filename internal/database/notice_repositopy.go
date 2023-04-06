@@ -14,6 +14,16 @@ type NoticeRepository struct {
 func (db *NoticeRepository) Store(notice models.Notice) error {
 	return db.Create(&notice)
 }
+
+func (db *NoticeRepository) CheckClient(userId, noticeId int) (bool, error) {
+	var client_id models.Notice
+	res := db.Where("id = ?", noticeId).Select("client_id").Find(&client_id)
+	if res.RowsAffected == 0 {
+		return false, gorm.ErrRecordNotFound
+	}
+	return client_id.ClientId == userId, res.Error
+}
+
 func (db *NoticeRepository) Select() []models.Notice {
 	var notices []models.Notice
 	db.FindAll(&notices)

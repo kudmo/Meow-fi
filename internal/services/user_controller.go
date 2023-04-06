@@ -56,7 +56,6 @@ func (controller *UserController) Login(c echo.Context) error {
 		"token": t,
 	})
 }
-
 func (controller *UserController) Registrate(c echo.Context) error {
 	login := c.FormValue("login")
 	password := c.FormValue("password")
@@ -74,7 +73,6 @@ func (controller *UserController) GetAllUsers(c echo.Context) error {
 	users := controller.Interactor.GetAllUsers()
 	return c.JSON(http.StatusOK, users)
 }
-
 func (controller *UserController) Delete(id int) error {
 	err := controller.Interactor.Delete(id)
 	return err

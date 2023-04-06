@@ -16,65 +16,38 @@ import (
 
 func Init() {
 	e := echo.New()
-	e.Use(middleware.Logger())
+	//e.Use(middleware.Logger())
+	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+		Format:           "time=${time_rfc3339_nano}, method=${method}, uri=${uri}, status=${status}\n",
+		CustomTimeFormat: "2006-01-02 15:04:05.00000",
+	}))
 	e.Use(middleware.Recover())
 
 	noticeController := controllers.NewNoticeController(database.NewSqlHandler())
 	userController := controllers.NewUserController(database.NewSqlHandler())
-	//dealController := controllers.NewDealController(database.NewSqlHandler())
 
 	noticeHandler := &handlers.NoticeHandler{Controller: *noticeController}
 	e.POST("login", userController.Login)
 	e.GET("/users", userController.GetAllUsers)
 	e.POST("/registrate", userController.Registrate)
 
-	e.GET("/notices", noticeHandler.GetAllNotices)
-	e.GET("/notices/:id",
-		noticeHandler.GetNoticeInfo,
-		echojwt.WithConfig(echojwt.Config{
-			NewClaimsFunc: func(c echo.Context) jwt.Claims {
-				return new(auth.JwtCustomClaims)
-			},
-			SigningKey: []byte(config.SecretKeyJwt),
-		}),
-	)
-	e.PUT("/notices/:id",
-		noticeHandler.UpdateNotice,
-		echojwt.WithConfig(echojwt.Config{
-			NewClaimsFunc: func(c echo.Context) jwt.Claims {
-				return new(auth.JwtCustomClaims)
-			},
-			SigningKey: []byte(config.SecretKeyJwt),
-		}),
-	)
-	e.DELETE("/notices/:id",
-		noticeHandler.DeleteNotice,
-		echojwt.WithConfig(echojwt.Config{
-			NewClaimsFunc: func(c echo.Context) jwt.Claims {
-				return new(auth.JwtCustomClaims)
-			},
-			SigningKey: []byte(config.SecretKeyJwt),
-		}),
-	)
-	e.POST("/notices",
-		noticeHandler.Create,
-		echojwt.WithConfig(echojwt.Config{
-			NewClaimsFunc: func(c echo.Context) jwt.Claims {
-				return new(auth.JwtCustomClaims)
-			},
-			SigningKey: []byte(config.SecretKeyJwt),
-		}),
-	)
+	noticeGroup := e.Group("/notices/")
+	noticeGroup.Use(echojwt.WithConfig(echojwt.Config{
+		NewClaimsFunc: func(c echo.Context) jwt.Claims {
+			return new(auth.JwtCustomClaims)
+		},
+		SigningKey: []byte(config.SecretKeyJwt),
+	}))
 
-	e.POST("/notices/:id/deals",
-		noticeHandler.AddResponse,
-		echojwt.WithConfig(echojwt.Config{
-			NewClaimsFunc: func(c echo.Context) jwt.Claims {
-				return new(auth.JwtCustomClaims)
-			},
-			SigningKey: []byte(config.SecretKeyJwt),
-		}),
-	)
+	e.GET("/notices", noticeHandler.GetAllNotices)
+	noticeGroup.GET(":id", noticeHandler.GetNoticeInfo)
+	noticeGroup.PUT(":id", noticeHandler.UpdateNotice)
+	noticeGroup.DELETE(":id", noticeHandler.DeleteNotice)
+	noticeGroup.POST("", noticeHandler.CreateNotice)
+
+	noticeGroup.POST(":id/deals", noticeHandler.AddResponse)
+	noticeGroup.DELETE(":id/deals", noticeHandler.DeleteDeal)
+	noticeGroup.PUT(":notice_id/deals/:performer_id", noticeHandler.ApproveResponse)
 
 	e.Logger.Fatal(e.Start(config.ServerPort))
 }

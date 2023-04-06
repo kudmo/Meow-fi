@@ -4,10 +4,10 @@ import "Meow-fi/internal/models"
 
 type DealRepository interface {
 	Store(models.Deal) error
-	UpdateDeal(models.Deal) error
+	ApproveDeal(performerId, noticeId int) error
 	Select() []models.Deal
-	SelectById(PerformerId, NoticeId int) (models.Deal, error)
-	GetAllPerformerDeals(PerformerId int) ([]models.Deal, error)
-	GetAllNoticeDeals(NoticeId int) ([]models.Deal, error)
-	Delete(Performerid, NoticeId int) error
+	SelectById(performerId, noticeId int) (models.Deal, error)
+	GetAllPerformerDeals(performerId int) ([]models.Deal, error)
+	GetAllNoticeDeals(noticeId int) ([]models.Deal, error)
+	Delete(performerId, noticeId int) error
 }

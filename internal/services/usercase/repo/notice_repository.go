@@ -7,5 +7,6 @@ type NoticeRepository interface {
 	UpdateNotice(models.Notice) error
 	Select() []models.Notice
 	SelectById(id int) (models.Notice, error)
+	CheckClient(userId, noticeId int) (bool, error)
 	Delete(id int) error
 }
