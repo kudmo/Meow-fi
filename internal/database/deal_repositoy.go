@@ -19,26 +19,38 @@ func (db *DealRepository) Select() []models.Deal {
 	db.FindAll(&deals)
 	return deals
 }
-func (db *DealRepository) UpdateDeal(deal models.Deal) error {
+func (db *DealRepository) ApproveDeal(performerId, noticeId int) error {
+	deal := models.Deal{}
+	err := db.Where("performer_id = ?", performerId).Where("notice_id = ?", noticeId).Find(&deal)
+	if err.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	deal.Approved = true
 	return db.Update(deal)
 }
-func (db *DealRepository) SelectById(PerformerId string, NoticeId string) (models.Deal, error) {
+func (db *DealRepository) SelectById(performerId, noticeId int) (models.Deal, error) {
 	var task models.Deal
-	err := db.Where("performer_id = ?", PerformerId).Where("notice_id = ?", NoticeId).Find(&task)
+	err := db.Where("performer_id = ?", performerId).Where("notice_id = ?", noticeId).Find(&task)
 	if err.RowsAffected == 0 {
 		return task, gorm.ErrRecordNotFound
 	}
 	return task, err.Error
 }
-func (db *DealRepository) GetDealInfo(PerformerId string, NoticeId string) (models.Deal, error) {
-	var task models.Deal
-	err := db.Preload("Performer").Where("performer_id = ?", PerformerId).Preload("Notice").Where("notice_id = ?", NoticeId).Find(&task)
-	if err.RowsAffected == 0 {
-		return task, gorm.ErrRecordNotFound
-	}
-	return task, err.Error
-}
-func (db *DealRepository) Delete(PerformerId string, NoticeId string) error {
+func (db *DealRepository) GetAllPerformerDeals(performerId int) ([]models.Deal, error) {
 	var deals []models.Deal
-	return db.Where("performer_id = ?", PerformerId).Where("notice_id = ?", NoticeId).Delete(&deals).Error
+	err := db.Where("performer_id = ?", performerId).Preload("Notice").Find(&deals).Error
+	return deals, err
+}
+func (db *DealRepository) GetAllNoticeDeals(noticeId int) ([]models.Deal, error) {
+	var deals []models.Deal
+	err := db.Where("notice_id = ?", noticeId).Preload("Performer").Find(&deals).Error
+	return deals, err
+}
+func (db *DealRepository) Delete(performerId, noticeId int) error {
+	var deals []models.Deal
+	res := db.Where("performer_id = ?", performerId).Where("notice_id = ?", noticeId)
+	if res.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return res.Delete(&deals).Error
 }

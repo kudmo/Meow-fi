@@ -14,6 +14,16 @@ type NoticeRepository struct {
 func (db *NoticeRepository) Store(notice models.Notice) error {
 	return db.Create(&notice)
 }
+
+func (db *NoticeRepository) CheckClient(userId, noticeId int) (bool, error) {
+	var client_id models.Notice
+	res := db.Where("id = ?", noticeId).Select("client_id").Find(&client_id)
+	if res.RowsAffected == 0 {
+		return false, gorm.ErrRecordNotFound
+	}
+	return client_id.ClientId == userId, res.Error
+}
+
 func (db *NoticeRepository) Select() []models.Notice {
 	var notices []models.Notice
 	db.FindAll(&notices)
@@ -22,18 +32,15 @@ func (db *NoticeRepository) Select() []models.Notice {
 func (db *NoticeRepository) UpdateNotice(notice models.Notice) error {
 	return db.Update(&notice)
 }
-func (db *NoticeRepository) SelectById(id string) (models.Notice, error) {
+func (db *NoticeRepository) SelectById(id int) (models.Notice, error) {
 	var notice models.Notice
 	res := db.Preload("Client").Where("id = ?", id).Find(&notice)
-	if res.Error != nil {
-		return notice, res.Error
-	}
 	if res.RowsAffected == 0 {
 		return notice, gorm.ErrRecordNotFound
 	}
-	return notice, nil
+	return notice, res.Error
 }
-func (db *NoticeRepository) Delete(id string) error {
+func (db *NoticeRepository) Delete(id int) error {
 	var notices []models.Notice
-	return db.DeleteById(&notices, id)
+	return db.Where("id = ?", id).Delete(&notices).Error
 }
