@@ -23,20 +23,25 @@ func NewSqlHandler() interfaces.SqlHandler {
 	sqlHandler.db = db
 	return sqlHandler
 }
-func (handler *SqlHandler) Create(obj interface{}) {
-	handler.db.Create(obj)
+func (handler *SqlHandler) Create(obj interface{}) error {
+	err := handler.db.Create(obj).Error
+	return err
 }
-func (handler *SqlHandler) Update(obj interface{}) {
-	handler.db.Save(obj)
+func (handler *SqlHandler) Update(obj interface{}) error {
+	err := handler.db.Save(obj).Error
+	return err
 }
-func (handler *SqlHandler) FindAll(obj interface{}) {
-	handler.db.Find(obj)
+func (handler *SqlHandler) FindAll(obj interface{}) error {
+	err := handler.db.Find(obj).Error
+	return err
 }
-func (handler *SqlHandler) DeleteById(obj interface{}, id string) {
-	handler.db.Delete(obj, id)
+func (handler *SqlHandler) DeleteById(obj interface{}, id string) error {
+	err := handler.db.Delete(obj, id).Error
+	return err
 }
-func (handler *SqlHandler) SelectById(obj interface{}, id string) {
-	handler.db.Select(obj, id)
+func (handler *SqlHandler) SelectById(obj interface{}, id string) error {
+	err := handler.db.Select(obj, id).Error
+	return err
 }
 func (handler *SqlHandler) Where(object interface{}, args ...interface{}) (tx *gorm.DB) {
 	return handler.db.Where(object, args)

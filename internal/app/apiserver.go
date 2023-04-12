@@ -6,7 +6,7 @@ import (
 	"Meow-fi/internal/transport"
 	"fmt"
 
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
