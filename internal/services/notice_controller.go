@@ -107,3 +107,6 @@ func (controller *NoticeController) DeleteDeal(performerId int, noticeId int) er
 	err := controller.dealInteractor.Delete(performerId, noticeId)
 	return err
 }
+func (controller *NoticeController) FindWithCategory(categoryId int) ([]models.Notice, error) {
+	return controller.noticeInteractor.FindWithCategory(categoryId)
+}

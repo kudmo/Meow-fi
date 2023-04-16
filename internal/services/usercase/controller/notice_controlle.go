@@ -52,3 +52,7 @@ func (interactor *NoticeInteractor) GetNoticeInfoShort(id int) (string, error) {
 func (interactor *NoticeInteractor) Delete(id int) error {
 	return interactor.NoticeRepository.Delete(id)
 }
+
+func (interactor *NoticeInteractor) FindWithCategory(categoryId int) ([]models.Notice, error) {
+	return interactor.NoticeRepository.FindWithCategory(categoryId)
+}

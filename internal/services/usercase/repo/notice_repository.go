@@ -9,4 +9,5 @@ type NoticeRepository interface {
 	SelectById(id int) (models.Notice, error)
 	CheckClient(userId, noticeId int) (bool, error)
 	Delete(id int) error
+	FindWithCategory(categoryId int) ([]models.Notice, error)
 }

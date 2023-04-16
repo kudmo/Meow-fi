@@ -40,6 +40,8 @@ func Init() {
 	}))
 
 	e.GET("/notices", noticeHandler.GetAllNotices)
+	e.GET("/notices/category", noticeHandler.FindByCategory)
+
 	noticeGroup.GET(":id", noticeHandler.GetNoticeInfo)
 	noticeGroup.PUT(":id", noticeHandler.UpdateNotice)
 	noticeGroup.DELETE(":id", noticeHandler.DeleteNotice)

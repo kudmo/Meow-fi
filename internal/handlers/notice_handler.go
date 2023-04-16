@@ -175,3 +175,13 @@ func (handler *NoticeHandler) DeleteDeal(c echo.Context) error {
 	}
 	return c.String(http.StatusOK, "deleted")
 }
+
+func (handler *NoticeHandler) FindByCategory(c echo.Context) error {
+	category, _ := strconv.Atoi(c.FormValue("category"))
+	res, err := handler.Controller.FindWithCategory(category)
+	if err != nil {
+		log.Println(err.Error())
+		return c.String(http.StatusInternalServerError, "something goes wrong")
+	}
+	return c.JSON(http.StatusOK, res)
+}

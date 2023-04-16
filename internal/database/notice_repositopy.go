@@ -44,3 +44,18 @@ func (db *NoticeRepository) Delete(id int) error {
 	var notices []models.Notice
 	return db.Where("id = ?", id).Delete(&notices).Error
 }
+
+func (db *NoticeRepository) FindWithCategory(categoryId int) ([]models.Notice, error) {
+	var notices []models.Notice
+	var category models.Category
+	res := db.Where("category_id = ?", categoryId).Take(&category)
+	if res.Error != nil {
+		return nil, res.Error
+	}
+	res = db.Table("categories").Where("left_key >= ? AND right_key <= ?", category.LeftKey, category.RightKey).Select("category_id")
+	if res.Error != nil {
+		return nil, res.Error
+	}
+	res = db.Where("category IN (?)", res).Find(&notices)
+	return notices, res.Error
+}

@@ -38,4 +38,8 @@ func dbinit() {
 	if err != nil {
 		fmt.Print("Deal already exists")
 	}
+	err = db.Migrator().CreateTable(models.Category{})
+	if err != nil {
+		fmt.Print("Category already exists")
+	}
 }

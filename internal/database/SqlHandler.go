@@ -49,3 +49,6 @@ func (handler *SqlHandler) Where(object interface{}, args ...interface{}) (tx *g
 func (handler *SqlHandler) Preload(query string, args ...interface{}) (tx *gorm.DB) {
 	return handler.db.Preload(query, args)
 }
+func (handler *SqlHandler) Table(name string) (tx *gorm.DB) {
+	return handler.db.Table(name)
+}
