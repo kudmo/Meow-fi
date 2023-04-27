@@ -58,14 +58,15 @@ func (controller *UserController) Login(c echo.Context) error {
 }
 func (controller *UserController) Registrate(c echo.Context) error {
 	login := c.FormValue("login")
+	email := c.FormValue("email")
 	password := c.FormValue("password")
 
 	randomSalt := auth.RandSeq()
 	hashedPass := auth.HashPass(password, randomSalt, config.LocalSalt)
-	user := models.User{Login: login, Password: hashedPass, Salt: randomSalt}
+	user := models.User{Login: login, Email: email, Password: hashedPass, Salt: randomSalt}
 
 	if controller.Interactor.Add(user) != nil {
-		return c.String(http.StatusBadRequest, "login already exist") //errors.New("login already exist")
+		return c.String(http.StatusBadRequest, "login or email already exist")
 	}
 	return c.String(http.StatusOK, "registrated")
 }

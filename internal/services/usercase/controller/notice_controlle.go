@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"Meow-fi/internal/database"
 	"Meow-fi/internal/models"
 	"Meow-fi/internal/services/usercase/repo"
 )
@@ -51,4 +52,8 @@ func (interactor *NoticeInteractor) GetNoticeInfoShort(id int) (string, error) {
 
 func (interactor *NoticeInteractor) Delete(id int) error {
 	return interactor.NoticeRepository.Delete(id)
+}
+
+func (interactor *NoticeInteractor) SelectWithFilter(filter database.SelectOptions) ([]models.Notice, error) {
+	return interactor.NoticeRepository.SelectWithFilter(filter)
 }

@@ -10,4 +10,5 @@ type SqlHandler interface {
 	FindAll(object interface{}) error
 	DeleteById(object interface{}, id string) error
 	SelectById(object interface{}, id string) error
+	Table(name string) (tx *gorm.DB)
 }
