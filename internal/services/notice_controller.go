@@ -88,7 +88,8 @@ func (controller *NoticeController) DeleteNotice(userId int, noticeId int) error
 	if notice.ClientId != userId {
 		return errors.New("not owner")
 	}
-
+	// deals, err := controller.dealInteractor.GetAllNoticeDeals(noticeId)
+	// for _, deal
 	err = controller.noticeInteractor.Delete(noticeId)
 	return err
 }
@@ -107,6 +108,8 @@ func (controller *NoticeController) DeleteDeal(performerId int, noticeId int) er
 	err := controller.dealInteractor.Delete(performerId, noticeId)
 	return err
 }
-func (controller *NoticeController) FindWithCategory(categoryId int) ([]models.Notice, error) {
-	return controller.noticeInteractor.FindWithCategory(categoryId)
+func (controller *NoticeController) SelectWithFilter(category int, typeNotion int) ([]models.Notice, error) {
+	filter := database.SelectOptions{}
+	filter.Fill(typeNotion, category)
+	return controller.noticeInteractor.SelectWithFilter(filter)
 }

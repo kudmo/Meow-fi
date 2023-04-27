@@ -39,8 +39,8 @@ func Init() {
 		SigningKey: []byte(config.SecretKeyJwt),
 	}))
 
-	e.GET("/notices", noticeHandler.GetAllNotices)
-	e.GET("/notices/category", noticeHandler.FindByCategory)
+	// e.GET("/notices", noticeHandler.GetAllNotices)
+	e.GET("/notices", noticeHandler.SelectWithFilter)
 
 	noticeGroup.GET(":id", noticeHandler.GetNoticeInfo)
 	noticeGroup.PUT(":id", noticeHandler.UpdateNotice)

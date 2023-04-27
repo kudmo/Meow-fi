@@ -32,7 +32,7 @@ func (handler *NoticeHandler) CreateNotice(c echo.Context) error {
 		log.Println(err.Error())
 		return c.String(http.StatusInternalServerError, "something goes wrong")
 	}
-	return c.String(http.StatusOK, "created")
+	return c.String(http.StatusCreated, "created")
 }
 
 // Returns all notices
@@ -176,9 +176,17 @@ func (handler *NoticeHandler) DeleteDeal(c echo.Context) error {
 	return c.String(http.StatusOK, "deleted")
 }
 
-func (handler *NoticeHandler) FindByCategory(c echo.Context) error {
-	category, _ := strconv.Atoi(c.FormValue("category"))
-	res, err := handler.Controller.FindWithCategory(category)
+// Returns all notions by GET-params (default value - 0)
+func (handler *NoticeHandler) SelectWithFilter(c echo.Context) error {
+	category, err := strconv.Atoi(c.QueryParam("category"))
+	if err != nil {
+		category = 0
+	}
+	typeNotion, err := strconv.Atoi(c.QueryParam("type"))
+	if err != nil {
+		typeNotion = 0
+	}
+	res, err := handler.Controller.SelectWithFilter(category, typeNotion)
 	if err != nil {
 		log.Println(err.Error())
 		return c.String(http.StatusInternalServerError, "something goes wrong")

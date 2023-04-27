@@ -1,6 +1,9 @@
 package repo
 
-import "Meow-fi/internal/models"
+import (
+	"Meow-fi/internal/database"
+	"Meow-fi/internal/models"
+)
 
 type NoticeRepository interface {
 	Store(models.Notice) error
@@ -9,5 +12,5 @@ type NoticeRepository interface {
 	SelectById(id int) (models.Notice, error)
 	CheckClient(userId, noticeId int) (bool, error)
 	Delete(id int) error
-	FindWithCategory(categoryId int) ([]models.Notice, error)
+	SelectWithFilter(filter database.SelectOptions) ([]models.Notice, error)
 }
