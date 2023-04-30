@@ -42,4 +42,8 @@ func dbinit() {
 	if err != nil {
 		fmt.Print("Category already exists")
 	}
+	err = db.Migrator().CreateTable(models.Material{})
+	if err != nil {
+		fmt.Print("Material already exists")
+	}
 }
