@@ -6,6 +6,7 @@ import (
 	"Meow-fi/internal/models"
 	"Meow-fi/internal/services/usercase/controller"
 	"errors"
+	"log"
 )
 
 type NoticeController struct {
@@ -62,17 +63,62 @@ func (controller *NoticeController) GetNoticeInfo(idUser int, noticeId int) (str
 	if err != nil {
 		return "", nil, err
 	}
-	var info string
-	var deals []models.Deal
+
+	var infoChan chan string = make(chan string, 1)
+	var dealsChan chan []models.Deal = make(chan []models.Deal, 1)
+	var errInfoChan chan error = make(chan error, 2)
+	var errDealsChan chan error = make(chan error, 2)
+
 	if notice.ClientId != idUser {
-		info, err = controller.noticeInteractor.GetNoticeInfoShort(noticeId)
+		go func() {
+			info, err := controller.noticeInteractor.GetNoticeInfoShort(noticeId)
+			infoChan <- info
+			errInfoChan <- err
+		}()
+		errDealsChan <- nil
+		dealsChan <- nil
 	} else {
-		info, err = controller.noticeInteractor.GetNoticeInfoFull(noticeId)
-		if err == nil {
-			deals, err = controller.dealInteractor.GetAllNoticeDeals(noticeId)
-		}
+		go func() {
+			if len(errDealsChan) != 0 {
+				if err := <-errDealsChan; err != nil {
+					errDealsChan <- err
+					errInfoChan <- nil
+					return
+				} else {
+					errDealsChan <- err
+				}
+			}
+			info, err := controller.noticeInteractor.GetNoticeInfoFull(noticeId)
+			infoChan <- info
+			errInfoChan <- err
+		}()
+		go func() {
+			if len(errInfoChan) != 0 {
+				err := <-errInfoChan
+				if err != nil {
+					errDealsChan <- nil
+					errInfoChan <- err
+
+					return
+				} else {
+					errInfoChan <- err
+
+				}
+			}
+			deals, err := controller.dealInteractor.GetAllNoticeDeals(noticeId)
+			dealsChan <- deals
+			errDealsChan <- err
+		}()
 	}
-	return info, deals, err
+	if err := <-errInfoChan; err != nil {
+		log.Println("Error: in getting information")
+		return "", nil, err
+	}
+	if err := <-errDealsChan; err != nil {
+		log.Println("Error: in getting deals")
+		return "", nil, err
+	}
+	return <-infoChan, <-dealsChan, nil
 }
 func (controller *NoticeController) GetAllNotices() []models.Notice {
 	res := controller.noticeInteractor.GetAllNotices()
