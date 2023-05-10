@@ -4,9 +4,8 @@ import (
 	"Meow-fi/internal/config"
 	"crypto/sha256"
 	"encoding/hex"
-	"log"
+	"errors"
 	"math/rand"
-	"net/http"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -28,19 +27,27 @@ type RTClaims struct {
 	jwt.RegisteredClaims
 }
 
+type AuthController struct {
+}
+
+// From context field "user" gets jwt and gets user id from it
 func TokenGetUserId(c echo.Context) int {
 	aa := c.Get("user")
 	return aa.(*jwt.Token).Claims.(*JWTClaims).UserId
 }
-func CalculateAccessToken(userId int, accessId string) (string, string, error) {
+
+// Returns encoded token, token id, error.
+//
+// The current duration of the token is 15 minutes
+func (controller *AuthController) CalculateAccessToken(userId int, refreshId string) (string, string, error) {
 	tokenId := uuid.New()
 	claims := &JWTClaims{
 		UserId:         userId,
 		TokenId:        tokenId.String(),
-		RefreshTokenId: accessId,
+		RefreshTokenId: refreshId,
 		Type:           "access",
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 1)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 15)),
 		},
 	}
 
@@ -51,7 +58,11 @@ func CalculateAccessToken(userId int, accessId string) (string, string, error) {
 	t, err := token.SignedString([]byte(config.SecretKeyJWT))
 	return t, tokenId.String(), err
 }
-func CalculateRefreshToken(userId int) (string, string, error) {
+
+// Returns encoded token, token id, error.
+//
+// The current duration of the token is 72 hours
+func (controller *AuthController) CalculateRefreshToken(userId int) (string, string, error) {
 	tokenId := uuid.New()
 	claims := &RTClaims{
 		UserId:  userId,
@@ -67,22 +78,17 @@ func CalculateRefreshToken(userId int) (string, string, error) {
 	t, err := token.SignedString([]byte(config.SecretKeyRT))
 	return t, tokenId.String(), err
 }
-func CalculateTokenPair(userId int) (map[string]string, error) {
-	refreshToken, refreshId, err := CalculateRefreshToken(userId)
-	if err != nil {
-		return nil, err
-	}
-	accessToken, _, err := CalculateAccessToken(userId, refreshId)
-	if err != nil {
-		return nil, err
-	}
-	return map[string]string{
-			"access_token":  accessToken,
-			"refresh_token": refreshToken,
-		},
-		err
-}
-func RefreshJWT(c echo.Context) error {
+
+// Get JWT an RT from json
+//
+//	json : {
+//		"refresh_token" : RT
+//		"access_token" : JWT
+//	}
+//
+// if the JWT has expired it is not an error
+// if RT has expired returns an appropriate error
+func (controller *AuthController) GetTokensFromContext(c echo.Context) (*JWTClaims, *RTClaims, error) {
 	type tokenReqBody struct {
 		RefreshToken string `json:"refresh_token"`
 		AccessToken  string `json:"access_token"`
@@ -92,35 +98,25 @@ func RefreshJWT(c echo.Context) error {
 	rt, err := jwt.ParseWithClaims(tokenReq.RefreshToken, &RTClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(config.SecretKeyRT), nil
 	})
+
 	if err != nil {
-		log.Println(err.Error())
-		return c.String(http.StatusInternalServerError, "something goes wrong")
+		return nil, nil, err
 	}
 	rtoken := rt.Claims.(*RTClaims)
 
 	at, err := jwt.ParseWithClaims(tokenReq.AccessToken, &JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(config.SecretKeyJWT), nil
 	})
-	if err != nil {
-		log.Println(err.Error())
-		return c.String(http.StatusInternalServerError, "something goes wrong")
+
+	if err != nil && !errors.Is(err, jwt.ErrTokenExpired) {
+		return nil, nil, err
 	}
 	atoken := at.Claims.(*JWTClaims)
 
-	if rt.Valid && atoken.RefreshTokenId == rtoken.TokenId {
-		newtoken, _, err := CalculateAccessToken(atoken.UserId, rtoken.TokenId)
-		if err != nil {
-			log.Println(err.Error())
-			return c.String(http.StatusInternalServerError, "something goes wrong")
-		}
-		return c.JSON(http.StatusOK, map[string]string{
-			"access_token": newtoken,
-		})
-	}
-	return c.NoContent(http.StatusUnauthorized)
+	return atoken, rtoken, nil
 }
 
-func RandSeq() string {
+func GenerateRandomSalt() string {
 	var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 	b := make([]rune, config.LenRandomSalt)
 	for i := range b {
@@ -128,7 +124,7 @@ func RandSeq() string {
 	}
 	return string(b)
 }
-func HashPass(password, randomSalt, localSalt string) string {
+func HashPassword(password, randomSalt, localSalt string) string {
 	sum := sha256.Sum256([]byte(password + randomSalt + localSalt))
 	return hex.EncodeToString(sum[:])
 }
