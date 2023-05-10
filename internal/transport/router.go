@@ -28,16 +28,18 @@ func Init() {
 	fileController := controllers.NewMaterialController(database.NewSqlHandler())
 
 	noticeHandler := &handlers.NoticeHandler{Controller: *noticeController}
-	e.POST("login", userController.Login)
+	e.POST("/login", userController.Login)
+	e.POST("/refresh", auth.RefreshJWT)
+
 	e.GET("/users", userController.GetAllUsers)
 	e.POST("/registrate", userController.Registrate)
 
 	noticeGroup := e.Group("/notices/")
 	noticeGroup.Use(echojwt.WithConfig(echojwt.Config{
 		NewClaimsFunc: func(c echo.Context) jwt.Claims {
-			return new(auth.JwtCustomClaims)
+			return new(auth.JWTClaims)
 		},
-		SigningKey: []byte(config.SecretKeyJwt),
+		SigningKey: []byte(config.SecretKeyJWT),
 	}))
 
 	e.GET("/notices", noticeHandler.SelectWithFilter)

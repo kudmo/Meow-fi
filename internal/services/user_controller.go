@@ -7,6 +7,7 @@ import (
 	"Meow-fi/internal/database/interfaces"
 	"Meow-fi/internal/models"
 	"Meow-fi/internal/services/usercase/controller"
+	"log"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -35,14 +36,13 @@ func (controller *UserController) Login(c echo.Context) error {
 	}
 
 	// Generate encoded token and send it as response.
-	t, err := auth.CalculateToken(userId)
+	tokens, err := auth.CalculateTokenPair(userId)
 	if err != nil {
-		return c.String(http.StatusInternalServerError, "something goes wrong "+err.Error())
+		log.Println("error while generating tokens: " + err.Error())
+		return c.String(http.StatusInternalServerError, "something goes wrong")
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{
-		"token": t,
-	})
+	return c.JSON(http.StatusOK, tokens)
 }
 func (controller *UserController) Registrate(c echo.Context) error {
 	login := c.FormValue("login")
