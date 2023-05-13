@@ -25,6 +25,7 @@ func Init() {
 
 	noticeController := controllers.NewNoticeController(database.NewSqlHandler())
 	userController := controllers.NewUserController(database.NewSqlHandler())
+	fileController := controllers.NewMaterialController(database.NewSqlHandler())
 
 	noticeHandler := &handlers.NoticeHandler{Controller: *noticeController}
 	e.POST("login", userController.Login)
@@ -39,7 +40,6 @@ func Init() {
 		SigningKey: []byte(config.SecretKeyJwt),
 	}))
 
-	// e.GET("/notices", noticeHandler.GetAllNotices)
 	e.GET("/notices", noticeHandler.SelectWithFilter)
 
 	noticeGroup.GET(":id", noticeHandler.GetNoticeInfo)
@@ -50,6 +50,10 @@ func Init() {
 	noticeGroup.POST(":id/deals", noticeHandler.AddResponse)
 	noticeGroup.DELETE(":id/deals", noticeHandler.DeleteDeal)
 	noticeGroup.PUT(":notice_id/deals/:performer_id", noticeHandler.ApproveResponse)
+
+	e.POST("/files", fileController.Upload)
+	e.GET("/files", fileController.SelectWithFilter)
+	e.GET("/files/:id", fileController.Download)
 
 	e.Logger.Fatal(e.Start(config.ServerPort))
 }

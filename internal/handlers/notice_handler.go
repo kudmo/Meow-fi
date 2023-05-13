@@ -186,7 +186,15 @@ func (handler *NoticeHandler) SelectWithFilter(c echo.Context) error {
 	if err != nil {
 		typeNotion = 0
 	}
-	res, err := handler.Controller.SelectWithFilter(category, typeNotion)
+	minCost, err := strconv.Atoi(c.QueryParam("min_cost"))
+	if err != nil {
+		minCost = 0
+	}
+	maxCost, err := strconv.Atoi(c.QueryParam("max_cost"))
+	if err != nil {
+		maxCost = 0
+	}
+	res, err := handler.Controller.SelectWithFilter(category, typeNotion, minCost, maxCost)
 	if err != nil {
 		log.Println(err.Error())
 		return c.String(http.StatusInternalServerError, "something goes wrong")

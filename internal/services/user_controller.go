@@ -8,9 +8,7 @@ import (
 	"Meow-fi/internal/models"
 	"Meow-fi/internal/services/usercase/controller"
 	"net/http"
-	"time"
 
-	"github.com/golang-jwt/jwt/v4"
 	"github.com/labstack/echo/v4"
 )
 
@@ -33,23 +31,13 @@ func (controller *UserController) Login(c echo.Context) error {
 	password := c.FormValue("password")
 	userId, err := controller.Interactor.CheckAuth(login, password)
 	if err != nil {
-		return echo.ErrUnauthorized
+		return c.String(http.StatusUnauthorized, "wrong login or password")
 	}
-
-	claims := &auth.JwtCustomClaims{
-		userId,
-		jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 72)),
-		},
-	}
-
-	// Create token with claims
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	// Generate encoded token and send it as response.
-	t, err := token.SignedString([]byte(config.SecretKeyJwt))
+	t, err := auth.CalculateToken(userId)
 	if err != nil {
-		return err
+		return c.String(http.StatusInternalServerError, "something goes wrong "+err.Error())
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{

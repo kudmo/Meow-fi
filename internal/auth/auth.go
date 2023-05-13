@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"math/rand"
+	"time"
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/labstack/echo/v4"
@@ -17,6 +18,22 @@ type JwtCustomClaims struct {
 
 func TokenGetUserId(c echo.Context) int {
 	return c.Get("user").(*jwt.Token).Claims.(*JwtCustomClaims).Id
+}
+
+func CalculateToken(userId int) (string, error) {
+	claims := &JwtCustomClaims{
+		Id: userId,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 72)),
+		},
+	}
+
+	// Create token with claims
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	// Generate encoded token and send it as response.
+	t, err := token.SignedString([]byte(config.SecretKeyJwt))
+	return t, err
 }
 
 func RandSeq() string {
