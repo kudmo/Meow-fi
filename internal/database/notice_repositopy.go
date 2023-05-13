@@ -14,11 +14,15 @@ type NoticeRepository struct {
 type SelectOptions struct {
 	categories int
 	types      int
+	maxCost    int
+	minCost    int
 }
 
-func (filter *SelectOptions) Fill(types, category int) {
+func (filter *SelectOptions) Fill(types, category, minCost, maxCost int) {
 	filter.categories = category
 	filter.types = types
+	filter.minCost = minCost
+	filter.maxCost = maxCost
 }
 
 func (db *NoticeRepository) Store(notice models.Notice) error {
@@ -83,12 +87,23 @@ func (db *NoticeRepository) SelectWithFilter(filter SelectOptions) ([]models.Not
 			return nil, res.Error
 		}
 	}
+	if filter.maxCost != 0 {
+		if res != nil {
+			res = res.Where("cost <= ?", filter.maxCost).Find(&notices)
+			return notices, res.Error
+
+		} else {
+			err := db.Where("cost <= ?", filter.maxCost).Find(&notices).Error
+			return notices, err
+
+		}
+	}
 	if res != nil {
-		res = res.Find(&notices)
+		res = res.Where("cost >= ?", filter.minCost).Find(&notices)
 		return notices, res.Error
 
 	} else {
-		err := db.FindAll(&notices)
+		err := db.Where("cost >= ?", filter.minCost).Find(&notices).Error
 		return notices, err
 
 	}

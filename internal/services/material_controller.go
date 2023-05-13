@@ -87,7 +87,7 @@ func (controller *MaterialController) SelectWithFilter(c echo.Context) error {
 		category = 0
 	}
 	filter := database.SelectOptions{}
-	filter.Fill(0, category)
+	filter.Fill(0, category, 0, 0)
 	res, err := controller.MaterialRepository.SelectWithFilter(filter)
 	if err != nil {
 		log.Println(err.Error())

@@ -108,8 +108,8 @@ func (controller *NoticeController) DeleteDeal(performerId int, noticeId int) er
 	err := controller.dealInteractor.Delete(performerId, noticeId)
 	return err
 }
-func (controller *NoticeController) SelectWithFilter(category int, typeNotion int) ([]models.Notice, error) {
+func (controller *NoticeController) SelectWithFilter(category int, typeNotion int, minCost int, maxCost int) ([]models.Notice, error) {
 	filter := database.SelectOptions{}
-	filter.Fill(typeNotion, category)
+	filter.Fill(typeNotion, category, minCost, maxCost)
 	return controller.noticeInteractor.SelectWithFilter(filter)
 }
