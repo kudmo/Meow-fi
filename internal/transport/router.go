@@ -28,32 +28,56 @@ func Init() {
 	fileController := controllers.NewMaterialController(database.NewSqlHandler())
 
 	noticeHandler := &handlers.NoticeHandler{Controller: *noticeController}
-	e.POST("login", userController.Login)
-	e.GET("/users", userController.GetAllUsers)
-	e.POST("/registrate", userController.Registrate)
 
-	noticeGroup := e.Group("/notices/")
+	userGroup := e.Group("/users")
+	userGroup.Use(echojwt.WithConfig(echojwt.Config{
+		NewClaimsFunc: func(c echo.Context) jwt.Claims {
+			return new(auth.JWTClaims)
+		},
+		Skipper: func(c echo.Context) bool {
+			return !(c.Request().URL.Path == "/users/logout" || c.Request().URL.Path == "/users/delete")
+		},
+		SigningKey: []byte(config.SecretKeyJWT),
+	}))
+	userGroup.POST("/login", userController.Login)
+	userGroup.POST("/logout", userController.Logout)
+	userGroup.POST("/delete", userController.Delete)
+	userGroup.POST("/relogin", userController.RefreshJWT)
+	userGroup.POST("/registrate", userController.Registrate)
+	userGroup.GET("/", userController.GetAllUsers)
+
+	noticeGroup := e.Group("/notices")
 	noticeGroup.Use(echojwt.WithConfig(echojwt.Config{
 		NewClaimsFunc: func(c echo.Context) jwt.Claims {
-			return new(auth.JwtCustomClaims)
+			return new(auth.JWTClaims)
 		},
-		SigningKey: []byte(config.SecretKeyJwt),
+		Skipper: func(c echo.Context) bool {
+			return c.Request().URL.Path == "/notices/"
+		},
+		SigningKey: []byte(config.SecretKeyJWT),
 	}))
+	noticeGroup.GET("/", noticeHandler.SelectWithFilter)
+	noticeGroup.GET("/:id", noticeHandler.GetNoticeInfo)
+	noticeGroup.PUT("/:id", noticeHandler.UpdateNotice)
+	noticeGroup.DELETE("/:id", noticeHandler.DeleteNotice)
+	noticeGroup.POST("/", noticeHandler.CreateNotice)
+	noticeGroup.POST("/:id/deals", noticeHandler.AddResponse)
+	noticeGroup.DELETE("/:id/deals", noticeHandler.DeleteDeal)
+	noticeGroup.PUT("/:notice_id/deals/:performer_id", noticeHandler.ApproveResponse)
 
-	e.GET("/notices", noticeHandler.SelectWithFilter)
-
-	noticeGroup.GET(":id", noticeHandler.GetNoticeInfo)
-	noticeGroup.PUT(":id", noticeHandler.UpdateNotice)
-	noticeGroup.DELETE(":id", noticeHandler.DeleteNotice)
-	noticeGroup.POST("", noticeHandler.CreateNotice)
-
-	noticeGroup.POST(":id/deals", noticeHandler.AddResponse)
-	noticeGroup.DELETE(":id/deals", noticeHandler.DeleteDeal)
-	noticeGroup.PUT(":notice_id/deals/:performer_id", noticeHandler.ApproveResponse)
-
-	e.POST("/files", fileController.Upload)
-	e.GET("/files", fileController.SelectWithFilter)
-	e.GET("/files/:id", fileController.Download)
+	fileGroup := e.Group("/files")
+	fileGroup.Use(echojwt.WithConfig(echojwt.Config{
+		NewClaimsFunc: func(c echo.Context) jwt.Claims {
+			return new(auth.JWTClaims)
+		},
+		Skipper: func(c echo.Context) bool {
+			return c.Request().URL.Path != "/files/upload"
+		},
+		SigningKey: []byte(config.SecretKeyJWT),
+	}))
+	fileGroup.POST("/upload", fileController.Upload)
+	fileGroup.GET("/", fileController.SelectWithFilter)
+	fileGroup.GET("/:id/download", fileController.Download)
 
 	e.Logger.Fatal(e.Start(config.ServerPort))
 }

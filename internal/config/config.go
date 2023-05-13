@@ -5,5 +5,6 @@ const (
 	DatabaseUrl   = "host=localhost user=postgres password=admin dbname=postgres port=5432 sslmode=disable"
 	LocalSalt     = "7pkXF9fZrunWS8rN"
 	LenRandomSalt = 16
-	SecretKeyJwt  = "FnxvahpdtSCIcJ3YGsmR"
+	SecretKeyJWT  = "FnxvahpdtSCIcJ3YGsmR"
+	SecretKeyRT   = "FnxvahpdtSCIcJ3YGsmR"
 )

@@ -15,6 +15,23 @@ func (db *UserRepository) Store(u models.User) error {
 	return db.Create(&u)
 }
 
+func (db *UserRepository) UpdateRefreshToken(userId int, refreshTokenId string) error {
+	user, err := db.SelectById(userId)
+	if err != nil {
+		return err
+	}
+	user.CurrentRefreshId = refreshTokenId
+	err = db.Update(user)
+	return err
+}
+func (db *UserRepository) GetRefreshToken(userId int) (string, error) {
+	var user models.User
+	res := db.Where("id = ?", userId).Select("current_refresh_id").Take(&user)
+	if res.Error != nil {
+		return "", res.Error
+	}
+	return user.CurrentRefreshId, nil
+}
 func (db *UserRepository) Select() []models.User {
 	var user []models.User
 	db.FindAll(&user)

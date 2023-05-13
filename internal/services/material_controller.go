@@ -1,6 +1,7 @@
 package services
 
 import (
+	"Meow-fi/internal/auth"
 	"Meow-fi/internal/database"
 	"Meow-fi/internal/database/interfaces"
 	"Meow-fi/internal/models"
@@ -27,8 +28,8 @@ func NewMaterialController(sqlHandler interfaces.SqlHandler) *MaterialController
 }
 
 func (controller *MaterialController) Upload(c echo.Context) error {
-	// userId := auth.TokenGetUserId(c)
-	userId := 1
+	userId := auth.TokenGetUserId(c)
+	// userId := 1
 	category, err := strconv.Atoi(c.FormValue("category"))
 	if err != nil {
 		return c.String(http.StatusBadRequest, "bad request: "+err.Error())
