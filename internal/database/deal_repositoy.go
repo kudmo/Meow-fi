@@ -30,7 +30,7 @@ func (db *DealRepository) ApproveDeal(performerId, noticeId int) error {
 }
 func (db *DealRepository) SelectById(performerId, noticeId int) (models.Deal, error) {
 	var task models.Deal
-	err := db.Where("performer_id = ?", performerId).Where("notice_id = ?", noticeId).Find(&task)
+	err := db.Preload("Performer").Where("performer_id = ?", performerId).Preload("Notice").Where("notice_id = ?", noticeId).Find(&task)
 	if err.RowsAffected == 0 {
 		return task, gorm.ErrRecordNotFound
 	}
@@ -43,7 +43,7 @@ func (db *DealRepository) GetAllPerformerDeals(performerId int) ([]models.Deal, 
 }
 func (db *DealRepository) GetAllNoticeDeals(noticeId int) ([]models.Deal, error) {
 	var deals []models.Deal
-	err := db.Where("notice_id = ?", noticeId).Preload("Performer").Find(&deals).Error
+	err := db.Where("notice_id = ?", noticeId).Find(&deals).Error
 	return deals, err
 }
 func (db *DealRepository) Delete(performerId, noticeId int) error {

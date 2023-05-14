@@ -5,8 +5,10 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"Meow-fi/internal/auth"
+	"Meow-fi/internal/database"
 	"Meow-fi/internal/models"
 	controllers "Meow-fi/internal/services"
 
@@ -25,8 +27,15 @@ type NoticeHandler struct {
 // Other parameters are obtained from JSON
 func (handler *NoticeHandler) CreateNotice(c echo.Context) error {
 	notice := models.Notice{}
-	c.Bind(&notice)
+	if err := c.Bind(&notice); err != nil {
+		return c.String(http.StatusBadRequest, "bad request")
+	}
+	if notice.TimeAvaliable.Unix() <= time.Now().Unix() {
+		notice.TimeAvaliable = time.Now().Add(time.Hour * 24 * 10)
+	}
+
 	userId := auth.TokenGetUserId(c)
+
 	err := handler.Controller.Create(userId, notice)
 	if err != nil {
 		log.Println(err.Error())
@@ -50,7 +59,7 @@ func (handler *NoticeHandler) GetNoticeInfo(c echo.Context) error {
 		return c.String(http.StatusBadRequest, "bad request")
 	}
 	userId := auth.TokenGetUserId(c)
-	noticeInfo, deals, err := handler.Controller.GetNoticeInfo(userId, id)
+	noticeInfo, err := handler.Controller.GetNoticeInfo(userId, id)
 	if err == gorm.ErrRecordNotFound {
 		return c.String(http.StatusNotFound, "no notice")
 	}
@@ -59,9 +68,71 @@ func (handler *NoticeHandler) GetNoticeInfo(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "something goes wrong")
 	}
 	return c.JSON(http.StatusOK, echo.Map{
-		"info":  noticeInfo,
-		"deals": deals,
+		"info": noticeInfo,
 	})
+}
+func (handler *NoticeHandler) GetNoticeDeals(c echo.Context) error {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return c.String(http.StatusBadRequest, "bad request")
+	}
+	userId := auth.TokenGetUserId(c)
+	flag, err := handler.Controller.CheckClient(userId, id)
+	if err == gorm.ErrRecordNotFound {
+		return c.String(http.StatusNotFound, "no notice")
+	}
+	if !flag {
+		return c.String(http.StatusForbidden, "not allowed")
+	}
+
+	deals, err := handler.Controller.GetNoticeDeals(userId, id)
+	if err != nil {
+		log.Println(err.Error())
+		return c.String(http.StatusInternalServerError, "something goes wrong")
+	}
+	return c.JSON(http.StatusOK, deals)
+}
+func (handler *NoticeHandler) GetPerformerDeals(c echo.Context) error {
+	userId := auth.TokenGetUserId(c)
+	deals, err := handler.Controller.GetPerformerDeals(userId)
+	if err != nil {
+		log.Println(err.Error())
+		return c.String(http.StatusInternalServerError, "something goes wrong")
+	}
+	return c.JSON(http.StatusOK, deals)
+}
+
+func (handler *NoticeHandler) GetDealInfo(c echo.Context) error {
+	notice_id, err := strconv.Atoi(c.Param("notice_id"))
+	if err != nil {
+		return c.String(http.StatusBadRequest, "bad request")
+	}
+	performer_id, err := strconv.Atoi(c.Param("performer_id"))
+	if err != nil {
+		return c.String(http.StatusBadRequest, "bad request")
+	}
+
+	userId := auth.TokenGetUserId(c)
+	flag, err := handler.Controller.CheckClient(userId, notice_id)
+	if err == gorm.ErrRecordNotFound {
+		return c.String(http.StatusNotFound, "no notice")
+	}
+	if !flag && !(performer_id == userId) {
+		return c.String(http.StatusForbidden, "not allowed")
+	}
+	deal, err := handler.Controller.GetDeal(performer_id, notice_id)
+	if err == gorm.ErrRecordNotFound {
+		return c.String(http.StatusNotFound, "no deal")
+	}
+	res := echo.Map{}
+	res["approved"] = deal.Approved
+	if deal.Approved && (performer_id == userId) {
+		res["client"] = deal.Notice.ClientId
+	} else {
+		res["performer"] = deal.PerformerId
+	}
+	res["notice_id"] = deal.NoticeId
+	return c.JSON(http.StatusOK, res)
 }
 
 // Update notice
@@ -178,23 +249,15 @@ func (handler *NoticeHandler) DeleteDeal(c echo.Context) error {
 
 // Returns all notions by GET-params (default value - 0)
 func (handler *NoticeHandler) SelectWithFilter(c echo.Context) error {
-	category, err := strconv.Atoi(c.QueryParam("category"))
-	if err != nil {
-		category = 0
+	filter := database.SelectOptions{}
+	echo.QueryParamsBinder(c)
+	if err := c.Bind(&filter); err != nil {
+		return c.String(http.StatusBadRequest, "bad request")
 	}
-	typeNotion, err := strconv.Atoi(c.QueryParam("type"))
-	if err != nil {
-		typeNotion = 0
+	if filter.PageNumber < 0 || filter.MaxCost < 0 || filter.MinCost < 0 {
+		return c.String(http.StatusBadRequest, "bad request")
 	}
-	minCost, err := strconv.Atoi(c.QueryParam("min_cost"))
-	if err != nil {
-		minCost = 0
-	}
-	maxCost, err := strconv.Atoi(c.QueryParam("max_cost"))
-	if err != nil {
-		maxCost = 0
-	}
-	res, err := handler.Controller.SelectWithFilter(category, typeNotion, minCost, maxCost)
+	res, err := handler.Controller.SelectWithFilter(filter)
 	if err != nil {
 		log.Println(err.Error())
 		return c.String(http.StatusInternalServerError, "something goes wrong")

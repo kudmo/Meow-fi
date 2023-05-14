@@ -33,6 +33,7 @@ func (controller *NoticeController) CheckClient(userId, noticeId int) (bool, err
 }
 func (controller *NoticeController) Create(idUser int, notice models.Notice) error {
 	notice.ClientId = idUser
+
 	err := controller.noticeInteractor.Add(notice)
 	return err
 }
@@ -57,23 +58,57 @@ func (controller *NoticeController) GetNotice(noticeId int) (models.Notice, erro
 
 // Returns information about the Notice .
 // If user is creator also returns an array of deal for the given notice.
-func (controller *NoticeController) GetNoticeInfo(idUser int, noticeId int) (string, []models.Deal, error) {
+func (controller *NoticeController) GetNoticeInfo(idUser int, noticeId int) (string, error) {
 	notice, err := controller.noticeInteractor.GetNotice(noticeId)
 	if err != nil {
-		return "", nil, err
+		return "", err
 	}
 	var info string
-	var deals []models.Deal
+	// var deals []models.Deal
+	// var myDeal models.Deal
+	// myDeal, err = controller.dealInteractor.GetDeal(idUser, noticeId)
+	// if err != nil && err != gorm.ErrRecordNotFound {
+	// 	return "", err
+	// }
 	if notice.ClientId != idUser {
 		info, err = controller.noticeInteractor.GetNoticeInfoShort(noticeId)
 	} else {
 		info, err = controller.noticeInteractor.GetNoticeInfoFull(noticeId)
-		if err == nil {
-			deals, err = controller.dealInteractor.GetAllNoticeDeals(noticeId)
-		}
+		// if err == nil {
+		// 	deals, err = controller.dealInteractor.GetAllNoticeDeals(noticeId)
+		// }
 	}
-	return info, deals, err
+	return info, err
 }
+func (controller *NoticeController) GetNoticeDeals(idUser int, noticeId int) ([]models.Deal, error) {
+	var deals []models.Deal
+	isOwner, err := controller.CheckClient(idUser, noticeId)
+	if err != nil {
+		return nil, err
+	}
+	if !isOwner {
+		return nil, errors.New("not owner")
+	}
+	deals, err = controller.dealInteractor.GetAllNoticeDeals(noticeId)
+	if err != nil {
+		return nil, err
+	}
+	return deals, nil
+}
+func (controller *NoticeController) GetPerformerDeals(idUser int) ([]models.Deal, error) {
+	var deals []models.Deal
+
+	deals, err := controller.dealInteractor.GetAllPerformerDeals(idUser)
+	if err != nil {
+		return nil, err
+	}
+	return deals, nil
+}
+func (controller *NoticeController) GetDeal(idUser int, noticeId int) (models.Deal, error) {
+	deal, err := controller.dealInteractor.GetDeal(idUser, noticeId)
+	return deal, err
+}
+
 func (controller *NoticeController) GetAllNotices() []models.Notice {
 	res := controller.noticeInteractor.GetAllNotices()
 	return res
@@ -108,8 +143,6 @@ func (controller *NoticeController) DeleteDeal(performerId int, noticeId int) er
 	err := controller.dealInteractor.Delete(performerId, noticeId)
 	return err
 }
-func (controller *NoticeController) SelectWithFilter(category int, typeNotion int, minCost int, maxCost int) ([]models.Notice, error) {
-	filter := database.SelectOptions{}
-	filter.Fill(typeNotion, category, minCost, maxCost)
+func (controller *NoticeController) SelectWithFilter(filter database.SelectOptions) ([]models.Notice, error) {
 	return controller.noticeInteractor.SelectWithFilter(filter)
 }

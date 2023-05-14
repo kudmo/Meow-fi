@@ -35,16 +35,20 @@ func Init() {
 			return new(auth.JWTClaims)
 		},
 		Skipper: func(c echo.Context) bool {
-			return !(c.Request().URL.Path == "/users/logout" || c.Request().URL.Path == "/users/delete")
+			return (c.Request().URL.Path == "/users/login" ||
+				c.Request().URL.Path == "/users/relogin" ||
+				c.Request().URL.Path == "/users/registrate")
 		},
 		SigningKey: []byte(config.SecretKeyJWT),
 	}))
 	userGroup.POST("/login", userController.Login)
-	userGroup.POST("/logout", userController.Logout)
-	userGroup.POST("/delete", userController.Delete)
 	userGroup.POST("/relogin", userController.RefreshJWT)
 	userGroup.POST("/registrate", userController.Registrate)
 	userGroup.GET("/", userController.GetAllUsers)
+	userGroup.GET("/:id", userController.GetAllUsers)
+	userGroup.GET("/my/deals", noticeHandler.GetPerformerDeals)
+	userGroup.POST("/logout", userController.Logout)
+	userGroup.POST("/delete", userController.Delete)
 
 	noticeGroup := e.Group("/notices")
 	noticeGroup.Use(echojwt.WithConfig(echojwt.Config{
@@ -60,9 +64,11 @@ func Init() {
 	noticeGroup.GET("/:id", noticeHandler.GetNoticeInfo)
 	noticeGroup.PUT("/:id", noticeHandler.UpdateNotice)
 	noticeGroup.DELETE("/:id", noticeHandler.DeleteNotice)
-	noticeGroup.POST("/", noticeHandler.CreateNotice)
+	noticeGroup.POST("/new", noticeHandler.CreateNotice)
+	noticeGroup.GET("/:id/deals", noticeHandler.GetNoticeDeals)
 	noticeGroup.POST("/:id/deals", noticeHandler.AddResponse)
 	noticeGroup.DELETE("/:id/deals", noticeHandler.DeleteDeal)
+	noticeGroup.GET("/:notice_id/deals/:performer_id", noticeHandler.GetDealInfo)
 	noticeGroup.PUT("/:notice_id/deals/:performer_id", noticeHandler.ApproveResponse)
 
 	fileGroup := e.Group("/files")

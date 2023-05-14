@@ -1,6 +1,7 @@
 package database
 
 import (
+	"Meow-fi/internal/config"
 	"Meow-fi/internal/database/interfaces"
 	"Meow-fi/internal/models"
 
@@ -25,8 +26,8 @@ func (db *MaterialRepository) SelectWithFilter(filter SelectOptions) ([]models.M
 	var categoties *gorm.DB
 	var res *gorm.DB
 	res = nil
-	if filter.categories != 0 {
-		categoties = db.Where("category_id = ?", filter.categories).Take(&category)
+	if filter.Categories != 0 {
+		categoties = db.Where("category_id = ?", filter.Categories).Take(&category)
 		if categoties.Error != nil {
 			return nil, categoties.Error
 		}
@@ -37,13 +38,15 @@ func (db *MaterialRepository) SelectWithFilter(filter SelectOptions) ([]models.M
 		}
 	}
 	if res != nil {
-		res = res.Find(&materials)
-		return materials, res.Error
-
+		res = res.Order(filter.OrderBy)
 	} else {
-		err := db.FindAll(&materials)
-		return materials, err
+		res = db.Order(filter.OrderBy)
 	}
+	res = res.Offset(config.SizeNotionPage * filter.PageNumber).Limit(config.SizeNotionPage).Find(&materials)
+	if res.Error != nil {
+		return nil, res.Error
+	}
+	return materials, nil
 }
 func (db *MaterialRepository) ReadMaterialPath(id int) (string, error) {
 	var material models.Material
