@@ -1,8 +1,10 @@
 package database
 
 import (
+	"Meow-fi/internal/config"
 	"Meow-fi/internal/database/interfaces"
 	"Meow-fi/internal/models"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -12,17 +14,21 @@ type NoticeRepository struct {
 }
 
 type SelectOptions struct {
-	categories int
-	types      int
-	maxCost    int
-	minCost    int
+	Categories int    `query:"categories"`
+	Types      int    `query:"types"`
+	MaxCost    int    `query:"max_cost"`
+	MinCost    int    `query:"min_cost"`
+	OrderBy    string `query:"order_by"`
+	PageNumber int    `query:"page"`
 }
 
-func (filter *SelectOptions) Fill(types, category, minCost, maxCost int) {
-	filter.categories = category
-	filter.types = types
-	filter.minCost = minCost
-	filter.maxCost = maxCost
+func (filter *SelectOptions) Fill(types, category, minCost, maxCost, pageNumber int, orderBy string) {
+	filter.Categories = category
+	filter.Types = types
+	filter.MinCost = minCost
+	filter.MaxCost = maxCost
+	filter.PageNumber = pageNumber
+	filter.OrderBy = orderBy
 }
 
 func (db *NoticeRepository) Store(notice models.Notice) error {
@@ -66,8 +72,8 @@ func (db *NoticeRepository) SelectWithFilter(filter SelectOptions) ([]models.Not
 	var categoties *gorm.DB
 	var res *gorm.DB
 	res = nil
-	if filter.categories != 0 {
-		categoties = db.Where("category_id = ?", filter.categories).Take(&category)
+	if filter.Categories != 0 {
+		categoties = db.Where("category_id = ?", filter.Categories).Take(&category)
 		if categoties.Error != nil {
 			return nil, categoties.Error
 		}
@@ -77,34 +83,41 @@ func (db *NoticeRepository) SelectWithFilter(filter SelectOptions) ([]models.Not
 			return nil, res.Error
 		}
 	}
-	if filter.types != 0 {
+	if filter.Types != 0 {
 		if res != nil {
-			res = res.Where("type_notice = ?", filter.types)
+			res = res.Where("type_notice = ?", filter.Types)
 		} else {
-			res = db.Where("type_notice = ?", filter.types)
+			res = db.Where("type_notice = ?", filter.Types)
 		}
 		if res.Error != nil {
 			return nil, res.Error
 		}
 	}
-	if filter.maxCost != 0 {
+	if filter.MaxCost != 0 {
 		if res != nil {
-			res = res.Where("cost <= ?", filter.maxCost).Find(&notices)
-			return notices, res.Error
-
+			res = res.Where("cost <= ?", filter.MaxCost)
 		} else {
-			err := db.Where("cost <= ?", filter.maxCost).Find(&notices).Error
-			return notices, err
-
+			res = db.Where("cost <= ?", filter.MaxCost)
+		}
+		if res.Error != nil {
+			return nil, res.Error
 		}
 	}
+
 	if res != nil {
-		res = res.Where("cost >= ?", filter.minCost).Find(&notices)
-		return notices, res.Error
-
+		res = res.Where("cost >= ?", filter.MinCost)
 	} else {
-		err := db.Where("cost >= ?", filter.minCost).Find(&notices).Error
-		return notices, err
-
+		res = db.Where("cost >= ?", filter.MinCost)
 	}
+	if res.Error != nil {
+		return nil, res.Error
+	}
+	if filter.OrderBy == "" {
+		filter.OrderBy = "created_at"
+	}
+	res = res.Order(filter.OrderBy).Where("time_avaliable >= ?", time.Now()).Offset(config.SizeNotionPage * (filter.PageNumber - 1)).Limit(config.SizeNotionPage).Find(&notices)
+	if res.Error != nil {
+		return nil, res.Error
+	}
+	return notices, nil
 }

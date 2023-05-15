@@ -52,3 +52,6 @@ func (handler *SqlHandler) Preload(query string, args ...interface{}) (tx *gorm.
 func (handler *SqlHandler) Table(name string) (tx *gorm.DB) {
 	return handler.db.Table(name)
 }
+func (handler *SqlHandler) Order(value interface{}) (tx *gorm.DB) {
+	return handler.db.Order(value)
+}

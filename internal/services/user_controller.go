@@ -10,9 +10,11 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/labstack/echo/v4"
+	"gorm.io/gorm"
 )
 
 type UserController struct {
@@ -124,6 +126,22 @@ func (controller *UserController) GetAllUsers(c echo.Context) error {
 	users := controller.Interactor.GetAllUsers()
 	return c.JSON(http.StatusOK, users)
 }
+func (controller *UserController) GetUserInfo(c echo.Context) error {
+	// type UserInfo struct {
+	// 	Login string `json:"login"`
+	// 	Email string `json:"email"`
+	// }
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return c.String(http.StatusBadRequest, "bad request")
+	}
+	user, err := controller.Interactor.GetUserById(id)
+	if err == gorm.ErrRecordNotFound {
+		return c.String(http.StatusNotFound, "no user")
+	}
+	return c.JSON(http.StatusOK, user)
+}
+
 func (controller *UserController) Delete(c echo.Context) error {
 	userId := auth.TokenGetUserId(c)
 	err := controller.Interactor.Delete(userId)

@@ -83,12 +83,17 @@ func (controller *MaterialController) Download(c echo.Context) error {
 	return c.Inline(material.Path, material.Name)
 }
 func (controller *MaterialController) SelectWithFilter(c echo.Context) error {
-	category, err := strconv.Atoi(c.FormValue("category"))
-	if err != nil {
-		category = 0
-	}
 	filter := database.SelectOptions{}
-	filter.Fill(0, category, 0, 0)
+	echo.QueryParamsBinder(c)
+	if err := c.Bind(&filter); err != nil {
+		return c.String(http.StatusBadRequest, "bad request")
+	}
+	if filter.PageNumber < 0 {
+		return c.String(http.StatusBadRequest, "bad request")
+	}
+	if filter.PageNumber == 0 {
+		filter.PageNumber = 1
+	}
 	res, err := controller.MaterialRepository.SelectWithFilter(filter)
 	if err != nil {
 		log.Println(err.Error())
