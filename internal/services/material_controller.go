@@ -91,6 +91,9 @@ func (controller *MaterialController) SelectWithFilter(c echo.Context) error {
 	if filter.PageNumber < 0 {
 		return c.String(http.StatusBadRequest, "bad request")
 	}
+	if filter.PageNumber == 0 {
+		filter.PageNumber = 1
+	}
 	res, err := controller.MaterialRepository.SelectWithFilter(filter)
 	if err != nil {
 		log.Println(err.Error())

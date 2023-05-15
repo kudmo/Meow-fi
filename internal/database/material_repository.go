@@ -42,7 +42,7 @@ func (db *MaterialRepository) SelectWithFilter(filter SelectOptions) ([]models.M
 	} else {
 		res = db.Order(filter.OrderBy)
 	}
-	res = res.Offset(config.SizeNotionPage * filter.PageNumber).Limit(config.SizeNotionPage).Find(&materials)
+	res = res.Offset(config.SizeNotionPage * (filter.PageNumber - 1)).Limit(config.SizeNotionPage).Find(&materials)
 	if res.Error != nil {
 		return nil, res.Error
 	}

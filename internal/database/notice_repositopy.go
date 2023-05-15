@@ -115,7 +115,7 @@ func (db *NoticeRepository) SelectWithFilter(filter SelectOptions) ([]models.Not
 	if filter.OrderBy == "" {
 		filter.OrderBy = "created_at"
 	}
-	res = res.Order(filter.OrderBy).Where("time_avaliable >= ?", time.Now()).Offset(config.SizeNotionPage * filter.PageNumber).Limit(config.SizeNotionPage).Find(&notices)
+	res = res.Order(filter.OrderBy).Where("time_avaliable >= ?", time.Now()).Offset(config.SizeNotionPage * (filter.PageNumber - 1)).Limit(config.SizeNotionPage).Find(&notices)
 	if res.Error != nil {
 		return nil, res.Error
 	}

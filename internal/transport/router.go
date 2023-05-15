@@ -22,7 +22,9 @@ func Init() {
 		CustomTimeFormat: "2006-01-02 15:04:05.00000",
 	}))
 	e.Use(middleware.Recover())
-
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: []string{"*"},
+	}))
 	noticeController := controllers.NewNoticeController(database.NewSqlHandler())
 	userController := controllers.NewUserController(database.NewSqlHandler())
 	fileController := controllers.NewMaterialController(database.NewSqlHandler())

@@ -257,6 +257,9 @@ func (handler *NoticeHandler) SelectWithFilter(c echo.Context) error {
 	if filter.PageNumber < 0 || filter.MaxCost < 0 || filter.MinCost < 0 {
 		return c.String(http.StatusBadRequest, "bad request")
 	}
+	if filter.PageNumber == 0 {
+		filter.PageNumber = 1
+	}
 	res, err := handler.Controller.SelectWithFilter(filter)
 	if err != nil {
 		log.Println(err.Error())
