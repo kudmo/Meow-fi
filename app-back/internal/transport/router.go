@@ -36,20 +36,12 @@ func Init() {
 		NewClaimsFunc: func(c echo.Context) jwt.Claims {
 			return new(auth.JWTClaims)
 		},
-		Skipper: func(c echo.Context) bool {
-			return (c.Request().URL.Path == "/users/login" ||
-				c.Request().URL.Path == "/users/relogin" ||
-				c.Request().URL.Path == "/users/registrate")
-		},
 		SigningKey: []byte(config.SecretKeyJWT),
 	}))
-	userGroup.POST("/login", userController.Login)
-	userGroup.POST("/relogin", userController.RefreshJWT)
-	userGroup.POST("/registrate", userController.Registrate)
 	userGroup.GET("/", userController.GetAllUsers)
 	userGroup.GET("/:id", userController.GetAllUsers)
 	userGroup.GET("/my/deals", noticeHandler.GetPerformerDeals)
-	userGroup.POST("/logout", userController.Logout)
+	userGroup.POST("/update", userController.Update)
 	userGroup.POST("/delete", userController.Delete)
 
 	noticeGroup := e.Group("/notices")
@@ -58,7 +50,7 @@ func Init() {
 			return new(auth.JWTClaims)
 		},
 		Skipper: func(c echo.Context) bool {
-			return c.Request().URL.Path == "/notices/"
+			return c.Request().URL.Path == "/"
 		},
 		SigningKey: []byte(config.SecretKeyJWT),
 	}))

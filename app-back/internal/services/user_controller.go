@@ -2,24 +2,20 @@ package services
 
 import (
 	"Meow-fi_app-back/internal/auth"
-	"Meow-fi_app-back/internal/config"
 	"Meow-fi_app-back/internal/database"
 	"Meow-fi_app-back/internal/database/interfaces"
 	"Meow-fi_app-back/internal/models"
 	"Meow-fi_app-back/internal/services/usercase/controller"
-	"errors"
 	"log"
 	"net/http"
 	"strconv"
 
-	"github.com/golang-jwt/jwt/v4"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
 )
 
 type UserController struct {
-	Interactor      controller.UserInteractor
-	TokenController auth.AuthController
+	Interactor controller.UserInteractor
 }
 
 func NewUserController(sqlHandler interfaces.SqlHandler) *UserController {
@@ -29,99 +25,24 @@ func NewUserController(sqlHandler interfaces.SqlHandler) *UserController {
 				SqlHandler: sqlHandler,
 			},
 		},
-		TokenController: auth.AuthController{},
 	}
 }
-
-func (controller *UserController) Login(c echo.Context) error {
-	login := c.FormValue("login")
-	password := c.FormValue("password")
-	userId, err := controller.Interactor.CheckAuth(login, password)
-	if err != nil {
-		return c.String(http.StatusUnauthorized, "wrong login or password")
-	}
-
-	// Generate encoded token and send it as response.
-	rtoken, rtoken_id, err := controller.TokenController.CalculateRefreshToken(userId)
-	if err != nil {
-		log.Println("error while generating tokens: " + err.Error())
-		return c.String(http.StatusInternalServerError, "something goes wrong")
-	}
-	err = controller.Interactor.UpdateRefreshToken(userId, rtoken_id)
-	if err != nil {
-		log.Println("error while generating tokens: " + err.Error())
-		return c.String(http.StatusInternalServerError, "something goes wrong")
-	}
-	atoken, _, err := controller.TokenController.CalculateAccessToken(userId, rtoken_id)
-	if err != nil {
-		log.Println("error while generating tokens: " + err.Error())
-		return c.String(http.StatusInternalServerError, "something goes wrong")
-	}
-	return c.JSON(http.StatusOK, map[string]string{
-		"access_token":  atoken,
-		"refresh_token": rtoken,
-	})
-}
-func (controller *UserController) Logout(c echo.Context) error {
+func (controller *UserController) Update(c echo.Context) error {
 	userId := auth.TokenGetUserId(c)
-	err := controller.Interactor.UpdateRefreshToken(userId, "")
-	if err != nil {
-		log.Println(err.Error())
-		return c.String(http.StatusInternalServerError, "something goes wrong")
-	}
-	return c.String(http.StatusOK, "logget out")
-}
-func (controller *UserController) RefreshJWT(c echo.Context) error {
-	access, refresh, err := controller.TokenController.GetTokensFromContext(c)
-	if errors.Is(err, jwt.ErrTokenExpired) {
-		return c.NoContent(http.StatusUnauthorized)
-	}
-	if err != nil {
-		log.Println(err.Error())
-		return c.String(http.StatusInternalServerError, "something goes wrong")
-	}
-	currId, err := controller.Interactor.UserRepository.GetRefreshToken(access.UserId)
-	if err != nil {
-		log.Println(err.Error())
-		return c.String(http.StatusInternalServerError, "something goes wrong")
-	}
-	if currId != refresh.TokenId {
-		return c.NoContent(http.StatusUnauthorized)
-	}
-	newRefreshToken, newId, err := controller.TokenController.CalculateRefreshToken(access.UserId)
-	if err != nil {
-		log.Println(err.Error())
-		return c.String(http.StatusInternalServerError, "something goes wrong")
-	}
-	err = controller.Interactor.UpdateRefreshToken(access.UserId, newId)
-	if err != nil {
-		log.Println(err.Error())
-		return c.String(http.StatusInternalServerError, "something goes wrong")
-	}
-	newAccess, _, err := controller.TokenController.CalculateAccessToken(access.UserId, newId)
-	if err != nil {
-		log.Println(err.Error())
-		return c.String(http.StatusInternalServerError, "something goes wrong")
-	}
-	return c.JSON(http.StatusOK, map[string]string{
-		"access_token":  newAccess,
-		"refresh_token": newRefreshToken,
-	})
-}
-func (controller *UserController) Registrate(c echo.Context) error {
-	login := c.FormValue("login")
-	email := c.FormValue("email")
-	password := c.FormValue("password")
 
-	randomSalt := auth.GenerateRandomSalt()
-	hashedPass := auth.HashPassword(password, randomSalt, config.LocalSalt)
-	user := models.User{Login: login, Email: email, Password: hashedPass, Salt: randomSalt}
-
-	if controller.Interactor.Add(user) != nil {
-		return c.String(http.StatusBadRequest, "login or email already exist")
+	user := models.User{}
+	if err := c.Bind(&user); err != nil {
+		return c.String(http.StatusBadRequest, "bad request")
 	}
-	return c.String(http.StatusOK, "registrated")
+	user.Id = userId
+	err := controller.Interactor.Add(user)
+	if err != nil {
+		log.Println(err.Error())
+		return c.String(http.StatusInternalServerError, "something goes wrong")
+	}
+	return c.String(http.StatusCreated, "updated")
 }
+
 func (controller *UserController) GetAllUsers(c echo.Context) error {
 	users := controller.Interactor.GetAllUsers()
 	return c.JSON(http.StatusOK, users)
@@ -141,7 +62,6 @@ func (controller *UserController) GetUserInfo(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, user)
 }
-
 func (controller *UserController) Delete(c echo.Context) error {
 	userId := auth.TokenGetUserId(c)
 	err := controller.Interactor.Delete(userId)
@@ -150,5 +70,4 @@ func (controller *UserController) Delete(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "something goes wrong")
 	}
 	return c.String(http.StatusOK, "deleted")
-
 }

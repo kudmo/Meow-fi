@@ -13,10 +13,10 @@ type UserInteractor struct {
 	UserRepository repo.UserRepository
 }
 
-func (interactor *UserInteractor) CheckAuth(login, password string) (int, error) {
-	user, err := interactor.UserRepository.SelectByLogin(login)
+func (interactor *UserInteractor) CheckAuth(email, password string) (int, error) {
+	user, err := interactor.UserRepository.SelectByEmail(email)
 
-	if err != nil || user.Login != login || user.Password != auth.HashPassword(password, user.Salt, config.LocalSalt) {
+	if err != nil || user.Email != email || user.Password != auth.HashPassword(password, user.Salt, config.LocalSalt) {
 		return 0, echo.ErrUnauthorized
 	}
 
@@ -32,6 +32,6 @@ func (interactor *UserInteractor) UpdateRefreshToken(userId int, refreshId strin
 func (interactor *UserInteractor) GetRefreshToken(userId int) (string, error) {
 	return interactor.UserRepository.GetRefreshToken(userId)
 }
-func (interactor *UserInteractor) GetUserByLogin(login string) (models.User, error) {
-	return interactor.UserRepository.SelectByLogin(login)
+func (interactor *UserInteractor) GetUserByEmail(login string) (models.User, error) {
+	return interactor.UserRepository.SelectByEmail(login)
 }

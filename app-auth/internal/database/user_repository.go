@@ -38,9 +38,9 @@ func (db *UserRepository) Select() []models.User {
 	return user
 }
 
-func (db *UserRepository) SelectByLogin(login string) (models.User, error) {
+func (db *UserRepository) SelectByEmail(email string) (models.User, error) {
 	var user models.User
-	res := db.Where("login = ?", login).Find(&user)
+	res := db.Where("email = ?", email).Find(&user)
 	if res.RowsAffected == 0 {
 		return user, gorm.ErrRecordNotFound
 	}

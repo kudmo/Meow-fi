@@ -8,6 +8,6 @@ type UserRepository interface {
 	GetRefreshToken(int) (string, error)
 	Select() []models.User
 	SelectById(id int) (models.User, error)
-	SelectByLogin(login string) (models.User, error)
+	SelectByEmail(email string) (models.User, error)
 	Delete(id int) error
 }

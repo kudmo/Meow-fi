@@ -1,4 +1,4 @@
-module Meow-fi_app-auth
+module Meow-fi_app-back
 
 go 1.20
 
