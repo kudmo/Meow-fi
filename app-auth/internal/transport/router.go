@@ -25,15 +25,15 @@ func Init() {
 	}))
 	userController := controllers.NewUserController(database.NewSqlHandler())
 
-	userGroup := e.Group("/users")
+	userGroup := e.Group("/user")
 	userGroup.Use(echojwt.WithConfig(echojwt.Config{
 		NewClaimsFunc: func(c echo.Context) jwt.Claims {
 			return new(auth.JWTClaims)
 		},
 		Skipper: func(c echo.Context) bool {
-			return (c.Request().URL.Path == "/users/login" ||
-				c.Request().URL.Path == "/users/relogin" ||
-				c.Request().URL.Path == "/users/registrate")
+			return (c.Request().URL.Path == "/user/login" ||
+				c.Request().URL.Path == "/user/relogin" ||
+				c.Request().URL.Path == "/user/registrate")
 		},
 		SigningKey: []byte(config.SecretKeyJWT),
 	}))

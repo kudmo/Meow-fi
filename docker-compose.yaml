@@ -1,0 +1,59 @@
+version: '3'
+services:
+  db-auth:
+    image: postgres
+    environment:
+      POSTGRES_USER: meow_fi_adm
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: meow_fi_auth
+    ports:
+      - 5431:5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U meow_fi_adm -d meow_fi_auth"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  db-back:
+    image: postgres
+    environment:
+      POSTGRES_USER: meow_fi_adm
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: meow_fi_back
+    ports:
+      - 5433:5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U meow_fi_adm -d meow_fi_back"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app-auth:
+    build: ./app-auth/
+    restart: always
+    depends_on:
+      db-auth:
+        condition: service_healthy
+    links:
+      - db-auth
+
+  app-back:
+    build: ./app-back/
+    restart: always
+    depends_on:
+      db-back:
+        condition: service_healthy
+    links:
+      - db-back
+
+  nginx:
+    build: ./nginx/
+    container_name: proxy_nginx
+    depends_on:
+      - app-auth
+      - app-back
+      - db-auth
+      - db-back
+    ports:
+      - '80:80'
+    restart: always
